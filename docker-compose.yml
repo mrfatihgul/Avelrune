@@ -1,0 +1,205 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: avelrune-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-avelrune}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-avelrune}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-avelrune} -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - avelrune-net
+
+##burayı önceki postgres kısmına entegre et ve buradan kurtul
+  db-init:
+    image: postgres:16-alpine
+    container_name: avelrune-db-init
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:-avelrune}
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        until pg_isready -h postgres -U ${POSTGRES_USER:-avelrune}; do sleep 1; done
+        for db in auth_db property_db request_db; do
+          psql -h postgres -U ${POSTGRES_USER:-avelrune} -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$$db'" | grep -q 1 \
+            || psql -h postgres -U ${POSTGRES_USER:-avelrune} -d postgres -c "CREATE DATABASE $$db"
+        done
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - avelrune-net
+
+  auth-service:
+    build:
+      context: ./auth-service
+    container_name: avelrune-auth
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/auth_db
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-avelrune}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-avelrune}
+      JWT_KEYS_DIR: /app/keys
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-28800000}
+    volumes:
+      - jwt-keys:/app/keys
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8081/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
+    networks:
+      - avelrune-net
+
+  property-service:
+    build:
+      context: ./property-service
+    container_name: avelrune-property
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/property_db
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-avelrune}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-avelrune}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8082/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 50s
+    networks:
+      - avelrune-net
+
+  request-service:
+    build:
+      context: ./request-service
+    container_name: avelrune-request
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/request_db
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-avelrune}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-avelrune}
+      PROPERTY_SERVICE_URL: http://property-service:8082
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+      property-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8083/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
+    networks:
+      - avelrune-net
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+    container_name: avelrune-gateway
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8081
+      PROPERTY_SERVICE_URL: http://property-service:8082
+      REQUEST_SERVICE_URL: http://request-service:8083
+      JWT_PUBLIC_KEY_PATH: /app/keys/public.pem
+      CORS_ORIGINS: ${SITE_URL:-http://localhost}
+    volumes:
+      - jwt-keys:/app/keys:ro
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.gateway.rule=PathPrefix(`/api`)
+      - traefik.http.routers.gateway.entrypoints=web
+      - traefik.http.routers.gateway.priority=10
+      - traefik.http.services.gateway.loadbalancer.server.port=8080
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      property-service:
+        condition: service_healthy
+      request-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks:
+      - avelrune-net
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        API_INTERNAL_URL: http://api-gateway:8080
+        NEXT_PUBLIC_SITE_URL: ${SITE_URL:-http://localhost}
+    container_name: avelrune-frontend
+    environment:
+      API_INTERNAL_URL: http://api-gateway:8080
+      NEXT_PUBLIC_SITE_URL: ${SITE_URL:-http://localhost}
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.frontend.rule=PathPrefix(`/`)
+      - traefik.http.routers.frontend.entrypoints=web
+      - traefik.http.routers.frontend.priority=1
+      - traefik.http.services.frontend.loadbalancer.server.port=3000
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    networks:
+      - avelrune-net
+
+  traefik:
+    image: traefik:v3.6.2
+    container_name: avelrune-traefik
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=avelrune-net
+      - --entrypoints.web.address=:80
+    ports:
+      - "80:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    networks:
+      - avelrune-net
+
+volumes:
+  postgres_data:
+  jwt-keys:
+
+networks:
+  avelrune-net:
+    name: avelrune-net
+    driver: bridge

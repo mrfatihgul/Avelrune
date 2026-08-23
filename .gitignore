@@ -1,0 +1,15 @@
+.env
+.DS_Store
+.idea/
+*.iml
+.vscode/
+node_modules/
+.next/
+out/
+target/
+*.log
+.mvn/
+postgres_data/
+**/keys/*.pem
+private.pem
+public.pem
