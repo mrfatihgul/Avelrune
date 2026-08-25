@@ -3,9 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/layout/Logo";
-import { apiFetch } from "@/lib/api";
-import { saveSession } from "@/lib/auth";
-import { AuthUser } from "@/lib/types";
+import { loginWithPassword } from "@/lib/login";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -18,17 +16,11 @@ export default function AdminLoginPage() {
     setLoading(true);
     setError("");
     try {
-      const response = await apiFetch<{
-        accessToken: string;
-        user: AuthUser;
-      }>("/api/auth/login", {
-        method: "POST",
-        body: JSON.stringify({
-          email: form.get("email"),
-          password: form.get("password"),
-        }),
-      });
-      saveSession(response.accessToken, response.user);
+      const user = await loginWithPassword(String(form.get("email")), String(form.get("password")));
+      if (user.role !== "ADMIN") {
+        router.replace("/my-listings");
+        return;
+      }
       router.replace("/admin");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Giriş yapılamadı.");

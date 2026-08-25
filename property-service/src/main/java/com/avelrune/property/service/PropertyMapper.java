@@ -17,6 +17,10 @@ public final class PropertyMapper {
     }
 
     public static PropertySummaryResponse toSummary(Property property) {
+        return toSummary(property, false);
+    }
+
+    public static PropertySummaryResponse toSummary(Property property, boolean includeOwner) {
         String cover = property.getImages().isEmpty() ? null : property.getImages().get(0).getUrl();
         return new PropertySummaryResponse(
                 property.getId(),
@@ -34,7 +38,7 @@ public final class PropertyMapper {
                 property.isActive(),
                 cover,
                 property.getCreatedAt(),
-                property.getAssignedUserId()
+                includeOwner ? property.getAssignedUserId() : null
         );
     }
 

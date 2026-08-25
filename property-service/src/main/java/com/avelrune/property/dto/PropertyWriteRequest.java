@@ -3,10 +3,12 @@ package com.avelrune.property.dto;
 import com.avelrune.property.enums.HeatingType;
 import com.avelrune.property.enums.ListingType;
 import com.avelrune.property.enums.PropertyType;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -14,9 +16,11 @@ import java.util.List;
 public class PropertyWriteRequest {
 
     @NotBlank
+    @Size(max = 180)
     private String title;
 
     @NotBlank
+    @Size(max = 6000)
     private String description;
 
     @NotNull
@@ -30,12 +34,15 @@ public class PropertyWriteRequest {
     private PropertyType propertyType;
 
     @NotBlank
+    @Size(max = 80)
     private String city;
 
     @NotBlank
+    @Size(max = 80)
     private String district;
 
     @NotBlank
+    @Size(max = 80)
     private String neighborhood;
 
     @Positive
@@ -45,10 +52,13 @@ public class PropertyWriteRequest {
     private int netArea;
 
     @NotBlank
+    @Size(max = 20)
     private String roomCount;
 
+    @Min(0)
     private int buildingAge;
     private int floor;
+    @Min(0)
     private int totalFloors;
 
     @NotNull
@@ -66,7 +76,8 @@ public class PropertyWriteRequest {
     private Long assignedUserId;
 
     @NotEmpty
-    private List<String> imageUrls;
+    @Size(max = 20)
+    private List<@NotBlank @Size(max = 260) String> imageUrls;
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }

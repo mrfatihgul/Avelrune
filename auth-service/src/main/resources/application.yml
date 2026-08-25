@@ -1,5 +1,6 @@
 server:
   port: 8081
+  forward-headers-strategy: framework
 
 spring:
   application:
@@ -33,3 +34,13 @@ management:
 jwt:
   keys-dir: ${JWT_KEYS_DIR:/app/keys}
   expiration-ms: ${JWT_EXPIRATION_MS:28800000}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: false
+    path: /swagger-ui.html
+    url: /api/docs/auth/v3/api-docs
+    config-url: /api/docs/auth/v3/api-docs/swagger-config
+    disable-swagger-default-url: true

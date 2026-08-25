@@ -1,5 +1,6 @@
 server:
   port: 8082
+  forward-headers-strategy: framework
 
 spring:
   application:
@@ -29,3 +30,13 @@ management:
     health:
       probes:
         enabled: true
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: false
+    path: /swagger-ui.html
+    url: /api/docs/property/v3/api-docs
+    config-url: /api/docs/property/v3/api-docs/swagger-config
+    disable-swagger-default-url: true

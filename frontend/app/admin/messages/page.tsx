@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
-import { apiFetch, authHeaders } from "@/lib/api";
-import { getToken } from "@/lib/auth";
+import { apiAuthFetch } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import { ContactMessage } from "@/lib/types";
 
@@ -12,10 +11,8 @@ export default function MessagesPage() {
   const [error, setError] = useState("");
 
   async function load() {
-    const token = getToken();
-    if (!token) return;
     try {
-      setMessages(await apiFetch<ContactMessage[]>("/api/requests", { headers: authHeaders(token) }));
+      setMessages(await apiAuthFetch<ContactMessage[]>("/api/inquiries"));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Talepler alınamadı.");
     }
@@ -26,9 +23,7 @@ export default function MessagesPage() {
   }, []);
 
   async function markRead(id: number) {
-    const token = getToken();
-    if (!token) return;
-    await apiFetch(`/api/requests/${id}/read`, { method: "PATCH", headers: authHeaders(token) });
+    await apiAuthFetch(`/api/inquiries/${id}/read`, { method: "PATCH" });
     load();
   }
 

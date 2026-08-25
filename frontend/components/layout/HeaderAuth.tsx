@@ -21,7 +21,7 @@ export function HeaderAuth() {
         {user.role === "ADMIN" ? (
           <Link href="/admin">Yönetim</Link>
         ) : (
-          <Link href="/evlerim">Evlerim</Link>
+          <Link href="/my-listings">Evlerim</Link>
         )}
         <button
           type="button"
@@ -39,8 +39,8 @@ export function HeaderAuth() {
 
   return (
     <>
-      <Link href="/giris">Giriş</Link>
-      <Link href="/uye-ol">Üye Ol</Link>
+      <Link href="/login">Giriş</Link>
+      <Link href="/register">Üye Ol</Link>
     </>
   );
 }

@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
-import { apiFetch, authHeaders } from "@/lib/api";
-import { getToken } from "@/lib/auth";
+import { apiAuthFetch } from "@/lib/api";
 import { formatPrice, listingLabel } from "@/lib/format";
 import { PageResponse, PropertySummary } from "@/lib/types";
 
@@ -13,13 +12,8 @@ export default function AdminPropertiesPage() {
   const [error, setError] = useState("");
 
   async function load() {
-    const token = getToken();
-    if (!token) return;
     try {
-      const response = await apiFetch<PageResponse<PropertySummary>>(
-        "/api/admin/properties?size=40",
-        { headers: authHeaders(token) }
-      );
+      const response = await apiAuthFetch<PageResponse<PropertySummary>>("/api/admin/properties?size=40");
       setData(response);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Liste alınamadı.");
@@ -31,21 +25,22 @@ export default function AdminPropertiesPage() {
   }, []);
 
   async function patch(path: string) {
-    const token = getToken();
-    if (!token) return;
-    await apiFetch(path, { method: "PATCH", headers: authHeaders(token) });
-    load();
+    try {
+      await apiAuthFetch(path, { method: "PATCH" });
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "İşlem tamamlanamadı.");
+    }
   }
 
   async function remove(id: number) {
     if (!confirm("İlan silinsin mi?")) return;
-    const token = getToken();
-    if (!token) return;
-    await apiFetch(`/api/admin/properties/${id}`, {
-      method: "DELETE",
-      headers: authHeaders(token),
-    });
-    load();
+    try {
+      await apiAuthFetch(`/api/admin/properties/${id}`, { method: "DELETE" });
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "İlan silinemedi.");
+    }
   }
 
   return (

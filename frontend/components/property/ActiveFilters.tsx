@@ -34,7 +34,7 @@ export function ActiveFilters({ params }: { params: SearchParams }) {
           </span>
         );
       })}
-      <Link href="/ilanlar" className="chip">
+      <Link href="/listings" className="chip">
         Tümünü temizle
       </Link>
     </div>

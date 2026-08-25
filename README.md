@@ -11,12 +11,15 @@ Tarayıcı
   └── Traefik :80
         ├── /        → frontend (Next.js :3000)
         └── /api/**  → api-gateway (Spring Cloud Gateway :8080)
-                         ├── /api/auth/**       → auth-service     :8081  → auth_db
-                         ├── /api/properties/** → property-service :8082  → property_db
-                         ├── /api/agents/**     → property-service
-                         ├── /api/admin/**      → property-service
-                         └── /api/requests/**   → request-service  :8083  → request_db
-                               └── postgres :5432
+                         ├── /api/auth/**          → auth-service     :8081  → auth_db
+                         ├── /api/docs/auth/**     → auth-service Swagger
+                         ├── /api/properties/**    → property-service :8082  → property_db
+                         ├── /api/docs/property/** → property-service Swagger
+                         ├── /api/agents/**        → property-service
+                         ├── /api/admin/**         → property-service
+                         ├── /api/inquiries/**      → inquiry-service  :8083  → inquiry_db
+                         ├── /api/docs/inquiries/** → inquiry-service Swagger
+                         └── /api/docs/gateway/**  → api-gateway OpenAPI (Swagger yok)
 ```
 
 Frontend, mikroservislere doğrudan gitmez. Tarayıcı `/api` istekleri Traefik üzerinden API Gateway’e gider. JWT doğrulaması yalnızca Gateway’de yapılır.
@@ -39,7 +42,7 @@ Frontend, mikroservislere doğrudan gitmez. Tarayıcı `/api` istekleri Traefik 
 | `api-gateway` | `/api/**` yönlendirme, CORS, JWT |
 | `auth-service` | Admin girişi, RS256 JWT üretimi |
 | `property-service` | İlanlar, görseller, danışmanlar, filtreleme, CRUD |
-| `request-service` | İletişim / ilan talepleri (Inquiry) |
+| `inquiry-service` | İlan sahiplerine gelen mesajlar |
 | `postgres` | Kalıcı veri (geliştirme için 5432 açık) |
 
 ## Çalıştırma
@@ -54,14 +57,14 @@ Mikroservis portları dışarı açılmaz. Geliştirme için PostgreSQL `localho
 
 İlk açılışta seed data otomatik yüklenir. Site boş gelmez.
 
-Önceki sürümden geliyorsanız `request_db` için volume’u yenilemek gerekebilir:
+`auth_db`, `property_db` ve `inquiry_db` ilk volume oluşturuluşunda `infra/postgres/init.sql` ile açılır. Mevcut volume’da bu veritabanları yoksa:
 
 ```bash
-docker compose down
+docker compose down -v
 docker compose up --build
 ```
 
-`db-init` mevcut Postgres volume’unda eksik veritabanlarını oluşturur. JWT anahtarları `jwt-keys` volume’unda tutulur; `private.pem` repoya girmez.
+JWT anahtarları `jwt-keys` volume’unda tutulur; `private.pem` repoya girmez.
 
 ## Demo hesaplar
 
@@ -69,15 +72,15 @@ Admin:
 
 - E-posta: `admin@avelrune.com`
 - Şifre: `AvelruneAdmin2026!`
-- Giriş: [http://localhost/admin/login](http://localhost/admin/login) veya [http://localhost/giris](http://localhost/giris)
+- Giriş: [http://localhost/admin/login](http://localhost/admin/login) veya [http://localhost/login](http://localhost/login)
 
 Üye:
 
 - E-posta: `user@avelrune.com`
 - Şifre: `AvelruneUser2026!`
-- Giriş: [http://localhost/giris](http://localhost/giris)
-- Üye ol: [http://localhost/uye-ol](http://localhost/uye-ol)
-- Evlerim: [http://localhost/evlerim](http://localhost/evlerim)
+- Giriş: [http://localhost/login](http://localhost/login)
+- Üye ol: [http://localhost/register](http://localhost/register)
+- Evlerim: [http://localhost/my-listings](http://localhost/my-listings)
 
 Üye kendi ev ilanını satılık/kiralık yayınlar. Ziyaretçi veya üye, ilan sayfasından sahibine mesaj gönderir. Mesajlar ayrı bir kutuda değil, Evlerim’de ilgili evin altında görünür.
 
@@ -92,7 +95,7 @@ Değişkenler `.env.example` dosyasındadır. `docker compose` varsayılan değe
 | `API_INTERNAL_URL` | Frontend SSR’nin gateway adresi (`http://api-gateway:8080`) |
 | `SITE_URL` | Public origin (`http://localhost`) |
 
-Şema ve demo veri Flyway migration’larındadır (`**/db/migration`). Hibernate `ddl-auto: validate` kullanır. Eski Hibernate tabloları varsa volume’u sıfırlamak gerekir: `docker compose down -v`.
+Şema Flyway ile `**/db/migration` altındadır (yayına giden kısım). Demo seed ayrıdır: `infra/dev/flyway`. Yerel `docker compose` `dev` profilini açıp o klasörü mount eder; production imajında seed SQL yoktur. Hibernate `ddl-auto: validate` kullanır.
 
 Auth servisi RSA anahtar çiftini `JWT_KEYS_DIR` altında üretir. Gateway aynı volume’dan `public.pem` okur.
 
@@ -104,18 +107,24 @@ POST /api/auth/register       public
 GET  /api/auth/me             JWT
 GET  /api/auth/users          JWT + ADMIN
 
-GET  /api/properties          public
-GET  /api/properties/featured public
-GET  /api/properties/meta     public
-GET  /api/properties/mine     JWT
-GET  /api/properties/{slug}   public
-GET  /api/properties/{slug}/similar public
-GET  /api/agents              public
+GET    /api/properties                public
+GET    /api/properties/featured       public
+GET    /api/properties/meta           public
+GET    /api/properties/mine           JWT
+GET    /api/properties/owned/{id}     JWT (sahip veya ADMIN)
+POST   /api/properties                JWT
+PUT    /api/properties/{id}           JWT (sahip veya ADMIN)
+DELETE /api/properties/{id}           JWT (sahip veya ADMIN)
+GET    /api/properties/{slug}         public
+GET    /api/properties/{slug}/similar public
+GET    /api/agents                    public
 
-POST  /api/requests           public
-GET   /api/requests           JWT + ADMIN
-GET   /api/requests/stats     JWT + ADMIN
-PATCH /api/requests/{id}/read JWT + ADMIN
+POST  /api/inquiries                   public (JWT isteğe bağlı)
+GET   /api/inquiries                   JWT + ADMIN
+GET   /api/inquiries/stats             JWT + ADMIN
+GET   /api/inquiries/summary           JWT (ilan sahibi)
+GET   /api/inquiries/property/{id}     JWT (sahip veya ADMIN)
+PATCH /api/inquiries/{id}/read         JWT (sahip veya ADMIN)
 
 GET    /api/admin/stats                JWT + ADMIN
 GET    /api/admin/properties           JWT + ADMIN
@@ -127,10 +136,24 @@ PATCH  /api/admin/properties/{id}/active   JWT + ADMIN
 PATCH  /api/admin/properties/{id}/featured JWT + ADMIN
 ```
 
+OpenAPI (springdoc) tüm servislerde vardır. Swagger UI yalnızca auth, property ve inquiry servislerindedir:
+
+```text
+http://localhost/api/docs/auth/swagger-ui/index.html
+http://localhost/api/docs/property/swagger-ui/index.html
+http://localhost/api/docs/inquiries/swagger-ui/index.html
+```
+
+Gateway yalnızca spec üretir (`/api/docs/gateway/v3/api-docs`), Swagger UI açmaz.
+
+Swagger UI `dev` profilinde açıktır (yerel compose). Production profilinde kapalıdır.
+
+İlan görselleri `http(s)` veya site içi yol (`/...`) olmalıdır. `/admin` yalnızca `ADMIN` rolü içindir; üye hesabı `/my-listings`e yönlenir.
+
 Public ilan filtreleri query parametreleriyle çalışır:
 
 ```text
-/ilanlar?listingType=SALE&city=İstanbul&rooms=4+1
+/listings?listingType=SALE&city=İstanbul&rooms=4+1
 ```
 
 ## Klasör yapısı
@@ -141,8 +164,9 @@ avelrune/
 ├── api-gateway/
 ├── auth-service/
 ├── property-service/
-├── request-service/
+├── inquiry-service/
 ├── infra/postgres/init.sql
+├── infra/dev/flyway/
 ├── docker-compose.yml
 ├── .env.example
 └── README.md

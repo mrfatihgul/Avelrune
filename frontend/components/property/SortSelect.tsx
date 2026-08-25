@@ -11,7 +11,7 @@ export function SortSelect({ current }: { current?: string }) {
     if (value && value !== "newest") next.set("sort", value);
     else next.delete("sort");
     next.delete("page");
-    router.push(`/ilanlar?${next.toString()}`);
+    router.push(`/listings?${next.toString()}`);
   }
 
   return (

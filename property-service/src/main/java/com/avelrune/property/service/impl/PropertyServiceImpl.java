@@ -95,7 +95,7 @@ public class PropertyServiceImpl implements PropertyService {
     public List<PropertySummaryResponse> listAssignedTo(Long userId) {
         return propertyRepository.findByAssignedUserIdOrderByUpdatedAtDesc(userId)
                 .stream()
-                .map(PropertyMapper::toSummary)
+                .map(property -> PropertyMapper.toSummary(property, true))
                 .toList();
     }
 
@@ -131,12 +131,13 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     public FilterMetaResponse meta() {
-        List<Property> properties = propertyRepository.findAll();
         Map<String, List<String>> cities = new LinkedHashMap<>();
-        for (Property property : properties) {
-            cities.computeIfAbsent(property.getCity(), key -> new ArrayList<>());
-            if (!cities.get(property.getCity()).contains(property.getDistrict())) {
-                cities.get(property.getCity()).add(property.getDistrict());
+        for (Object[] row : propertyRepository.findDistinctCityDistricts()) {
+            String city = (String) row[0];
+            String district = (String) row[1];
+            List<String> districts = cities.computeIfAbsent(city, key -> new ArrayList<>());
+            if (district != null && !districts.contains(district)) {
+                districts.add(district);
             }
         }
         List<FilterMetaResponse.CityOption> cityOptions = cities.entrySet().stream()
@@ -306,12 +307,27 @@ public class PropertyServiceImpl implements PropertyService {
         property.clearImages();
         int order = 0;
         for (String url : request.getImageUrls()) {
+            String safeUrl = validateImageUrl(url);
             PropertyImage image = new PropertyImage();
-            image.setUrl(url);
+            image.setUrl(safeUrl);
             image.setAltText(request.getTitle());
             image.setSortOrder(order++);
             property.addImage(image);
         }
+    }
+
+    private String validateImageUrl(String url) {
+        if (url == null || url.isBlank()) {
+            throw new ApiException(400, "Görsel adresi geçersiz.");
+        }
+        String trimmed = url.trim();
+        if (trimmed.startsWith("/") && !trimmed.startsWith("//")) {
+            return trimmed;
+        }
+        if (trimmed.startsWith("https://") || trimmed.startsWith("http://")) {
+            return trimmed;
+        }
+        throw new ApiException(400, "Görsel adresi http(s) veya site içi yol olmalıdır.");
     }
 
     private String uniqueSlug(String base, Long currentId) {

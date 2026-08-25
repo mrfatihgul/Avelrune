@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { PropertyForm } from "@/components/admin/PropertyForm";
-import { apiFetch, authHeaders } from "@/lib/api";
-import { getToken } from "@/lib/auth";
+import { apiAuthFetch } from "@/lib/api";
 import { PropertyDetail } from "@/lib/types";
 
 export default function EditPropertyPage() {
@@ -14,11 +13,7 @@ export default function EditPropertyPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const token = getToken();
-    if (!token) return;
-    apiFetch<PropertyDetail>(`/api/admin/properties/${params.id}`, {
-      headers: authHeaders(token),
-    })
+    apiAuthFetch<PropertyDetail>(`/api/admin/properties/${params.id}`)
       .then(setProperty)
       .catch((err) => setError(err instanceof Error ? err.message : "İlan alınamadı."));
   }, [params.id]);

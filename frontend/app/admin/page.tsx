@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
-import { apiFetch, authHeaders } from "@/lib/api";
-import { getToken } from "@/lib/auth";
+import { apiAuthFetch } from "@/lib/api";
 import { PropertyStats } from "@/lib/types";
 
 export default function AdminDashboardPage() {
@@ -12,11 +11,9 @@ export default function AdminDashboardPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const token = getToken();
-    if (!token) return;
     Promise.all([
-      apiFetch<PropertyStats>("/api/admin/stats", { headers: authHeaders(token) }),
-      apiFetch<{ total: number }>("/api/requests/stats", { headers: authHeaders(token) }),
+      apiAuthFetch<PropertyStats>("/api/admin/stats"),
+      apiAuthFetch<{ total: number }>("/api/inquiries/stats"),
     ])
       .then(([propertyStats, contactStats]) => {
         setStats(propertyStats);

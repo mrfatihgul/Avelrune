@@ -29,7 +29,7 @@ export function ContactForm() {
 
     setStatus("loading");
     try {
-      await apiFetch("/api/requests", {
+      await apiFetch("/api/inquiries", {
         method: "POST",
         body: JSON.stringify({
           fullName: data.fullName,

@@ -12,7 +12,7 @@ export function PropertyCard({
 }) {
   return (
     <article className={`property-card is-${variant}`}>
-      <Link href={`/ilan/${property.slug}`}>
+      <Link href={`/listing/${property.slug}`}>
         <div className="media">
           <span className="tag">{listingLabel(property.listingType)}</span>
           {property.coverImage ? (

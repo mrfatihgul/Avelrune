@@ -2,8 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiFetch, authHeaders } from "@/lib/api";
-import { getToken } from "@/lib/auth";
+import { apiAuthFetch } from "@/lib/api";
 import { PropertyDetail } from "@/lib/types";
 
 const empty = {
@@ -35,8 +34,6 @@ export function OwnerListingForm({ property }: { property?: PropertyDetail }) {
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const token = getToken();
-    if (!token) return;
     const form = new FormData(event.currentTarget);
     const payload = {
       title: String(form.get("title")),
@@ -70,19 +67,17 @@ export function OwnerListingForm({ property }: { property?: PropertyDetail }) {
     setError("");
     try {
       if (property) {
-        await apiFetch(`/api/properties/${property.id}`, {
+        await apiAuthFetch(`/api/properties/${property.id}`, {
           method: "PUT",
-          headers: authHeaders(token),
           body: JSON.stringify(payload),
         });
       } else {
-        await apiFetch("/api/properties", {
+        await apiAuthFetch("/api/properties", {
           method: "POST",
-          headers: authHeaders(token),
           body: JSON.stringify(payload),
         });
       }
-      router.push("/evlerim");
+      router.push("/my-listings");
     } catch (err) {
       setError(err instanceof Error ? err.message : "İlan kaydedilemedi.");
     } finally {

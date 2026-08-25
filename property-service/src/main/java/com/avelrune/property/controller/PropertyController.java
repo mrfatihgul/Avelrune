@@ -6,7 +6,6 @@ import com.avelrune.property.dto.PropertyDetailResponse;
 import com.avelrune.property.dto.PropertySummaryResponse;
 import com.avelrune.property.enums.ListingType;
 import com.avelrune.property.enums.PropertyType;
-import com.avelrune.property.exception.ApiException;
 import com.avelrune.property.service.PropertyService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.avelrune.property.dto.PropertyWriteRequest;
+import com.avelrune.property.security.AuthHeaders;
 import jakarta.validation.Valid;
 
 import java.util.List;
@@ -73,10 +73,7 @@ public class PropertyController {
     public ResponseEntity<List<PropertySummaryResponse>> mine(
             @RequestHeader(value = "X-Authenticated-User-Id", required = false) String userId
     ) {
-        if (userId == null || userId.isBlank()) {
-            throw new ApiException(401, "Giriş yapmanız gerekiyor.");
-        }
-        return ResponseEntity.ok(propertyService.listAssignedTo(Long.parseLong(userId)));
+        return ResponseEntity.ok(propertyService.listAssignedTo(AuthHeaders.requireUserId(userId)));
     }
 
     @GetMapping("/owned/{id}")
@@ -85,7 +82,7 @@ public class PropertyController {
             @RequestHeader(value = "X-Authenticated-User-Id", required = false) String userId,
             @RequestHeader(value = "X-Authenticated-Role", required = false) String role
     ) {
-        return ResponseEntity.ok(propertyService.getOwned(id, parseUserId(userId), isAdmin(role)));
+        return ResponseEntity.ok(propertyService.getOwned(id, AuthHeaders.requireUserId(userId), AuthHeaders.isAdmin(role)));
     }
 
     @GetMapping("/id/{id}")
@@ -99,12 +96,8 @@ public class PropertyController {
             @RequestHeader(value = "X-Authenticated-User-Id", required = false) String userId,
             @RequestHeader(value = "X-Authenticated-Role", required = false) String role
     ) {
-        Long actorId = parseUserId(userId);
-        if (actorId == null) {
-            throw new ApiException(401, "Giriş yapmanız gerekiyor.");
-        }
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(propertyService.create(request, actorId, isAdmin(role)));
+                .body(propertyService.create(request, AuthHeaders.requireUserId(userId), AuthHeaders.isAdmin(role)));
     }
 
     @PutMapping("/{id}")
@@ -114,7 +107,7 @@ public class PropertyController {
             @RequestHeader(value = "X-Authenticated-User-Id", required = false) String userId,
             @RequestHeader(value = "X-Authenticated-Role", required = false) String role
     ) {
-        return ResponseEntity.ok(propertyService.update(id, request, parseUserId(userId), isAdmin(role)));
+        return ResponseEntity.ok(propertyService.update(id, request, AuthHeaders.requireUserId(userId), AuthHeaders.isAdmin(role)));
     }
 
     @DeleteMapping("/{id}")
@@ -123,7 +116,7 @@ public class PropertyController {
             @RequestHeader(value = "X-Authenticated-User-Id", required = false) String userId,
             @RequestHeader(value = "X-Authenticated-Role", required = false) String role
     ) {
-        propertyService.delete(id, parseUserId(userId), isAdmin(role));
+        propertyService.delete(id, AuthHeaders.requireUserId(userId), AuthHeaders.isAdmin(role));
         return ResponseEntity.noContent().build();
     }
 
@@ -137,14 +130,4 @@ public class PropertyController {
         return ResponseEntity.ok(propertyService.similar(slug));
     }
 
-    private Long parseUserId(String userId) {
-        if (userId == null || userId.isBlank()) {
-            throw new ApiException(401, "Giriş yapmanız gerekiyor.");
-        }
-        return Long.parseLong(userId);
-    }
-
-    private boolean isAdmin(String role) {
-        return "ADMIN".equals(role);
-    }
 }

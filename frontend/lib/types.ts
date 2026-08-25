@@ -110,7 +110,7 @@ export interface AuthUser {
   id: number;
   email: string;
   fullName: string;
-  role: string;
+  role: "ADMIN" | "USER";
 }
 
 export interface SearchParams {

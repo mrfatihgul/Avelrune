@@ -1,5 +1,7 @@
 package com.avelrune.gateway.security;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -15,7 +17,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @Component
 public class JwtGatewayFilter implements GlobalFilter, Ordered {
@@ -25,9 +28,11 @@ public class JwtGatewayFilter implements GlobalFilter, Ordered {
     private static final String USER_ID_HEADER = "X-Authenticated-User-Id";
 
     private final JwtPublicKeyService publicKeyService;
+    private final ObjectMapper objectMapper;
 
-    public JwtGatewayFilter(JwtPublicKeyService publicKeyService) {
+    public JwtGatewayFilter(JwtPublicKeyService publicKeyService, ObjectMapper objectMapper) {
         this.publicKeyService = publicKeyService;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -55,28 +60,16 @@ public class JwtGatewayFilter implements GlobalFilter, Ordered {
         }
 
         try {
-            Claims claims = Jwts.parser()
-                    .verifyWith(publicKeyService.getPublicKey())
-                    .build()
-                    .parseSignedClaims(header.substring(7))
-                    .getPayload();
+            Claims claims = parseClaims(header);
             String email = claims.getSubject();
-            String role = claims.get("role", String.class);
             if (email == null || email.isBlank()) {
                 return unauthorized(exchange, "Oturum geçersiz.");
             }
+            String role = claims.get("role", String.class);
             if (requiresAdmin(method, path) && !"ADMIN".equals(role)) {
                 return forbidden(exchange);
             }
-            builder.headers(headers -> headers.remove(HttpHeaders.AUTHORIZATION));
-            builder.header(USER_HEADER, email);
-            if (role != null && !role.isBlank()) {
-                builder.header(ROLE_HEADER, role);
-            }
-            Object uid = claims.get("uid");
-            if (uid != null) {
-                builder.header(USER_ID_HEADER, String.valueOf(uid));
-            }
+            attachIdentity(builder, claims);
             return chain.filter(exchange.mutate().request(builder.build()).build());
         } catch (JwtException | IllegalArgumentException ex) {
             return unauthorized(exchange, "Oturum geçersiz veya süresi doldu.");
@@ -84,10 +77,10 @@ public class JwtGatewayFilter implements GlobalFilter, Ordered {
     }
 
     private boolean isPublic(HttpMethod method, String path) {
-        if (method == HttpMethod.OPTIONS) {
+        if (path.startsWith("/api/docs/") || path.startsWith("/actuator")) {
             return true;
         }
-        if (path.startsWith("/actuator")) {
+        if (method == HttpMethod.OPTIONS) {
             return true;
         }
         if (method == HttpMethod.POST && (pathEquals(path, "/api/auth/login") || pathEquals(path, "/api/auth/register"))) {
@@ -105,30 +98,21 @@ public class JwtGatewayFilter implements GlobalFilter, Ordered {
         if (method == HttpMethod.GET && (pathEquals(path, "/api/agents") || path.startsWith("/api/agents/"))) {
             return true;
         }
-        return method == HttpMethod.POST && pathEquals(path, "/api/requests");
-    }
-
-    private boolean requiresAdmin(HttpMethod method, String path) {
-        if (path.startsWith("/api/admin")) {
-            return true;
-        }
-        if (path.startsWith("/api/auth/users")) {
-            return true;
-        }
-        if (path.startsWith("/api/requests/property") || pathEquals(path, "/api/requests/summary")) {
-            return false;
-        }
-        if (method == HttpMethod.PATCH && path.matches("/api/requests/\\d+/read/?")) {
-            return false;
-        }
-        if (pathEquals(path, "/api/requests") || path.startsWith("/api/requests/")) {
-            return method != HttpMethod.POST || !pathEquals(path, "/api/requests");
-        }
         return false;
     }
 
+    private boolean requiresAdmin(HttpMethod method, String path) {
+        if (path.startsWith("/api/admin") || path.startsWith("/api/auth/users")) {
+            return true;
+        }
+        if (pathEquals(path, "/api/inquiries/stats")) {
+            return true;
+        }
+        return method == HttpMethod.GET && pathEquals(path, "/api/inquiries");
+    }
+
     private boolean isOptionalJwt(HttpMethod method, String path) {
-        return method == HttpMethod.POST && pathEquals(path, "/api/requests");
+        return method == HttpMethod.POST && pathEquals(path, "/api/inquiries");
     }
 
     private Mono<Void> attachOptionalJwt(
@@ -142,35 +126,39 @@ public class JwtGatewayFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange.mutate().request(builder.build()).build());
         }
         try {
-            Claims claims = Jwts.parser()
-                    .verifyWith(publicKeyService.getPublicKey())
-                    .build()
-                    .parseSignedClaims(header.substring(7))
-                    .getPayload();
-            String email = claims.getSubject();
-            String role = claims.get("role", String.class);
-            builder.headers(headers -> headers.remove(HttpHeaders.AUTHORIZATION));
-            if (email != null && !email.isBlank()) {
-                builder.header(USER_HEADER, email);
-            }
-            if (role != null && !role.isBlank()) {
-                builder.header(ROLE_HEADER, role);
-            }
-            Object uid = claims.get("uid");
-            if (uid != null) {
-                builder.header(USER_ID_HEADER, String.valueOf(uid));
-            }
-            return chain.filter(exchange.mutate().request(builder.build()).build());
+            attachIdentity(builder, parseClaims(header));
         } catch (JwtException | IllegalArgumentException ex) {
-            return chain.filter(exchange.mutate().request(builder.build()).build());
+            // keep guest request
+        }
+        return chain.filter(exchange.mutate().request(builder.build()).build());
+    }
+
+    private Claims parseClaims(String authorization) {
+        return Jwts.parser()
+                .verifyWith(publicKeyService.getPublicKey())
+                .build()
+                .parseSignedClaims(authorization.substring(7))
+                .getPayload();
+    }
+
+    private void attachIdentity(ServerHttpRequest.Builder builder, Claims claims) {
+        builder.headers(headers -> headers.remove(HttpHeaders.AUTHORIZATION));
+        String email = claims.getSubject();
+        String role = claims.get("role", String.class);
+        if (email != null && !email.isBlank()) {
+            builder.header(USER_HEADER, email);
+        }
+        if (role != null && !role.isBlank()) {
+            builder.header(ROLE_HEADER, role);
+        }
+        Object uid = claims.get("uid");
+        if (uid != null) {
+            builder.header(USER_ID_HEADER, String.valueOf(uid));
         }
     }
 
     private boolean pathEquals(String path, String expected) {
-        if (path.equals(expected)) {
-            return true;
-        }
-        return path.equals(expected + "/");
+        return path.equals(expected) || path.equals(expected + "/");
     }
 
     private Mono<Void> unauthorized(ServerWebExchange exchange, String message) {
@@ -182,10 +170,17 @@ public class JwtGatewayFilter implements GlobalFilter, Ordered {
     }
 
     private Mono<Void> writeJson(ServerWebExchange exchange, HttpStatus status, String message) {
-        byte[] body = """
-                {"status":%d,"error":"%s","message":"%s"}
-                """.formatted(status.value(), status.getReasonPhrase(), message)
-                .getBytes(StandardCharsets.UTF_8);
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("status", status.value());
+        payload.put("error", status.getReasonPhrase());
+        payload.put("message", message);
+        byte[] body;
+        try {
+            body = objectMapper.writeValueAsBytes(payload);
+        } catch (JsonProcessingException ex) {
+            body = "{\"status\":500,\"error\":\"Internal Server Error\",\"message\":\"Yanıt üretilemedi.\"}"
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        }
         exchange.getResponse().setStatusCode(status);
         exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
         return exchange.getResponse().writeWith(

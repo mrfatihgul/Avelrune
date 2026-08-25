@@ -5,6 +5,8 @@ import com.avelrune.property.enums.ListingType;
 import com.avelrune.property.enums.PropertyType;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.ArrayList;
+
 public final class PropertySpecifications {
 
     private PropertySpecifications() {
@@ -48,10 +50,21 @@ public final class PropertySpecifications {
                 predicates = cb.and(predicates, cb.le(root.get("price"), maxPrice));
             }
             if (rooms != null && !rooms.isBlank()) {
-                if (rooms.endsWith("+")) {
-                    predicates = cb.and(predicates, cb.equal(root.get("roomCount"), rooms));
+                String value = rooms.trim();
+                if (value.endsWith("+") && value.length() > 1) {
+                    String prefix = value.substring(0, value.length() - 1).trim();
+                    if (prefix.matches("\\d+")) {
+                        int min = Integer.parseInt(prefix);
+                        var matches = new ArrayList<String>();
+                        for (int n = min; n <= 12; n++) {
+                            matches.add(n + "+1");
+                            matches.add(n + "+2");
+                            matches.add(String.valueOf(n));
+                        }
+                        predicates = cb.and(predicates, root.get("roomCount").in(matches));
+                    }
                 } else {
-                    predicates = cb.and(predicates, cb.equal(root.get("roomCount"), rooms));
+                    predicates = cb.and(predicates, cb.equal(root.get("roomCount"), value));
                 }
             }
             if (minArea != null) {

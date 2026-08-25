@@ -50,7 +50,7 @@ export function OwnerMessageForm({
     setStatus("loading");
     try {
       const token = getToken();
-      await apiFetch("/api/requests", {
+      await apiFetch("/api/inquiries", {
         method: "POST",
         headers: token ? authHeaders(token) : undefined,
         body: JSON.stringify({

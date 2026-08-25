@@ -8,6 +8,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
@@ -44,4 +45,7 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
 
     @EntityGraph(attributePaths = "images")
     List<Property> findByAssignedUserIdOrderByUpdatedAtDesc(Long assignedUserId);
+
+    @Query("select distinct p.city, p.district from Property p order by p.city, p.district")
+    List<Object[]> findDistinctCityDistricts();
 }

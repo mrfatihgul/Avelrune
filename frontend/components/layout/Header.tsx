@@ -8,11 +8,11 @@ import { Logo } from "./Logo";
 
 const links = [
   { href: "/", label: "Ana Sayfa" },
-  { href: "/ilanlar?listingType=SALE", label: "Satılık" },
-  { href: "/ilanlar?listingType=RENT", label: "Kiralık" },
-  { href: "/ilanlar", label: "Portföy" },
-  { href: "/hakkimizda", label: "Hakkımızda" },
-  { href: "/iletisim", label: "İletişim" },
+  { href: "/listings?listingType=SALE", label: "Satılık" },
+  { href: "/listings?listingType=RENT", label: "Kiralık" },
+  { href: "/listings", label: "Portföy" },
+  { href: "/about", label: "Hakkımızda" },
+  { href: "/contact", label: "İletişim" },
 ];
 
 export function Header({ overHero = false }: { overHero?: boolean }) {
@@ -65,6 +65,8 @@ export function Header({ overHero = false }: { overHero?: boolean }) {
             <button
               className={`menu-toggle ${open ? "is-open" : ""}`}
               aria-label={open ? "Menüyü kapat" : "Menüyü aç"}
+              aria-expanded={open}
+              aria-controls="mobile-nav"
               onClick={() => setOpen((value) => !value)}
             >
               <span />
@@ -72,7 +74,7 @@ export function Header({ overHero = false }: { overHero?: boolean }) {
           </div>
         </div>
       </header>
-      <nav className={`mobile-nav ${open ? "is-open" : ""}`} aria-label="Mobil menü">
+      <nav id="mobile-nav" className={`mobile-nav ${open ? "is-open" : ""}`} aria-label="Mobil menü">
         {links.map((link) => (
           <Link key={link.href} href={link.href}>
             {link.label}

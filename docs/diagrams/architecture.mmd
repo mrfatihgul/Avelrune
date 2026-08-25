@@ -1,0 +1,41 @@
+flowchart LR
+  browser[Tarayıcı :80]
+
+  subgraph edge [Kenar]
+    traefik[Traefik]
+  end
+
+  subgraph apps [Uygulama]
+    frontend["frontend Next.js :3000"]
+    gateway["api-gateway :8080"]
+  end
+
+  subgraph services [Mikroservisler]
+    auth["auth-service :8081"]
+    property["property-service :8082"]
+    inquiry["inquiry-service :8083"]
+  end
+
+  subgraph data [Veri]
+    authDb[(auth_db)]
+    propertyDb[(property_db)]
+    inquiryDb[(inquiry_db)]
+    keys[jwt-keys volume]
+  end
+
+  browser --> traefik
+  traefik -->|"/"| frontend
+  traefik -->|"/api/**"| gateway
+
+  frontend -->|"SSR API_INTERNAL_URL"| gateway
+
+  gateway -->|"/api/auth/**"| auth
+  gateway -->|"/api/properties /api/agents /api/admin"| property
+  gateway -->|"/api/inquiries/**"| inquiry
+
+  auth --> authDb
+  auth -->|"private.pem + public.pem"| keys
+  property --> propertyDb
+  inquiry --> inquiryDb
+  inquiry -->|"ilan doğrula"| property
+  gateway -->|"public.pem RS256"| keys

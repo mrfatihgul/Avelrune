@@ -13,7 +13,7 @@ export function FeaturedProperties({ properties }: { properties: PropertySummary
             <span className="eyebrow">Seçkin portföy</span>
             <h2 className="display">Şu anda üzerinde durduğumuz adresler.</h2>
           </div>
-          <Link href="/ilanlar" className="btn btn-ghost">
+          <Link href="/listings" className="btn btn-ghost">
             Tüm portföy
           </Link>
         </div>

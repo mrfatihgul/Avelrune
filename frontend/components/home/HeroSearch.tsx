@@ -24,7 +24,7 @@ export function HeroSearch({ meta }: { meta: FilterMeta }) {
     if (propertyType) params.set("propertyType", propertyType);
     if (minPrice) params.set("minPrice", minPrice);
     if (maxPrice) params.set("maxPrice", maxPrice);
-    router.push(`/ilanlar?${params.toString()}`);
+    router.push(`/listings?${params.toString()}`);
   }
 
   return (

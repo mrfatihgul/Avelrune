@@ -20,11 +20,17 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
 
   useEffect(() => {
-    if (!getToken()) {
+    const token = getToken();
+    const current = getUser();
+    if (!token || !current) {
       router.replace("/admin/login");
       return;
     }
-    setUser(getUser() ?? { id: 0, email: "admin@avelrune.com", fullName: "Avelrune Yönetim", role: "ADMIN" });
+    if (current.role !== "ADMIN") {
+      router.replace("/my-listings");
+      return;
+    }
+    setUser(current);
   }, [router]);
 
   if (!user) {

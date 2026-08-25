@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Avelrune mimari diyagramları</title>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+  </script>
+  <style>
+    body {
+      font-family: Georgia, "Times New Roman", serif;
+      max-width: 1100px;
+      margin: 40px auto;
+      padding: 0 24px 80px;
+      color: #1c1917;
+      background: #f6f3ee;
+    }
+    h1, h2 { font-weight: 500; }
+    h1 { font-size: 2rem; }
+    h2 { margin-top: 48px; font-size: 1.35rem; }
+    p { color: #57534e; }
+    .diagram {
+      background: #fff;
+      border: 1px solid #e7e5e4;
+      padding: 24px;
+      overflow-x: auto;
+    }
+    a { color: #1c1917; }
+    .files { margin: 16px 0 32px; }
+  </style>
+</head>
+<body>
+  <h1>Avelrune mimari diyagramları</h1>
+  <p>Kaynak dosyalar: <code>architecture.mmd</code>, <code>jwt-flow.mmd</code>. Bu sayfayı tarayıcıda açıp PDF olarak kaydedebilirsin.</p>
+  <p class="files">
+    <a href="./architecture.mmd" download>architecture.mmd indir</a>
+    ·
+    <a href="./jwt-flow.mmd" download>jwt-flow.mmd indir</a>
+  </p>
+
+  <h2>Yığın</h2>
+  <div class="diagram">
+    <pre class="mermaid">
+flowchart LR
+  browser[Tarayıcı :80]
+
+  subgraph edge [Kenar]
+    traefik[Traefik]
+  end
+
+  subgraph apps [Uygulama]
+    frontend["frontend Next.js :3000"]
+    gateway["api-gateway :8080"]
+  end
+
+  subgraph services [Mikroservisler]
+    auth["auth-service :8081"]
+    property["property-service :8082"]
+    inquiry["inquiry-service :8083"]
+  end
+
+  subgraph data [Veri]
+    authDb[(auth_db)]
+    propertyDb[(property_db)]
+    inquiryDb[(inquiry_db)]
+    keys[jwt-keys volume]
+  end
+
+  browser --> traefik
+  traefik -->|"/"| frontend
+  traefik -->|"/api/**"| gateway
+
+  frontend -->|"SSR API_INTERNAL_URL"| gateway
+
+  gateway -->|"/api/auth/**"| auth
+  gateway -->|"/api/properties /api/agents /api/admin"| property
+  gateway -->|"/api/inquiries/**"| inquiry
+
+  auth --> authDb
+  auth -->|"private.pem + public.pem"| keys
+  property --> propertyDb
+  inquiry --> inquiryDb
+  inquiry -->|"ilan doğrula"| property
+  gateway -->|"public.pem RS256"| keys
+    </pre>
+  </div>
+
+  <h2>JWT akışı</h2>
+  <div class="diagram">
+    <pre class="mermaid">
+sequenceDiagram
+  participant Browser
+  participant Traefik
+  participant Gateway
+  participant Auth as auth-service
+  participant Property as property-service
+
+  Browser->>Traefik: POST /api/auth/login
+  Traefik->>Gateway: /api/auth/login
+  Gateway->>Auth: public, JWT yok
+  Auth-->>Browser: accessToken RS256
+
+  Browser->>Traefik: GET /api/properties/mine + Bearer
+  Traefik->>Gateway: JWT doğrula
+  Gateway->>Property: X-Authenticated-User-Id / Role
+  Property-->>Browser: sahibin ilanları
+    </pre>
+  </div>
+</body>
+</html>

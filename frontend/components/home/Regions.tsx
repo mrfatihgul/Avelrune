@@ -24,7 +24,7 @@ export function Regions() {
             const params = new URLSearchParams({ city: region.city });
             if (region.district) params.set("district", region.district);
             return (
-              <Link key={region.name} href={`/ilanlar?${params.toString()}`} className="region">
+              <Link key={region.name} href={`/listings?${params.toString()}`} className="region">
                 <Image src={region.image} alt={region.name} fill sizes="40vw" />
                 <div className="region-copy">
                   <span className="eyebrow">Portföy</span>

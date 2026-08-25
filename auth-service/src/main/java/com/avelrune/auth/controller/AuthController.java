@@ -5,6 +5,7 @@ import com.avelrune.auth.dto.LoginRequest;
 import com.avelrune.auth.dto.RegisterRequest;
 import com.avelrune.auth.dto.UserResponse;
 import com.avelrune.auth.exception.ApiException;
+import com.avelrune.auth.security.AuthHeaders;
 import com.avelrune.auth.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -49,7 +50,10 @@ public class AuthController {
     }
 
     @GetMapping("/users")
-    public ResponseEntity<List<UserResponse>> users() {
+    public ResponseEntity<List<UserResponse>> users(
+            @RequestHeader(value = "X-Authenticated-Role", required = false) String role
+    ) {
+        AuthHeaders.requireAdmin(role);
         return ResponseEntity.ok(authService.listUsers());
     }
 }

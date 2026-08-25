@@ -2,8 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiFetch, authHeaders } from "@/lib/api";
-import { getToken } from "@/lib/auth";
+import { apiAuthFetch, apiFetch } from "@/lib/api";
 import { Agent, AuthUser, PropertyDetail } from "@/lib/types";
 
 const empty = {
@@ -41,18 +40,14 @@ export function PropertyForm({ property }: { property?: PropertyDetail }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const token = getToken();
     apiFetch<Agent[]>("/api/agents").then(setAgents).catch(() => setAgents([]));
-    if (!token) return;
-    apiFetch<AuthUser[]>("/api/auth/users", { headers: authHeaders(token) })
+    apiAuthFetch<AuthUser[]>("/api/auth/users")
       .then(setUsers)
       .catch(() => setUsers([]));
   }, []);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const token = getToken();
-    if (!token) return;
     const form = new FormData(event.currentTarget);
     const payload = {
       title: String(form.get("title")),
@@ -90,15 +85,13 @@ export function PropertyForm({ property }: { property?: PropertyDetail }) {
     setError("");
     try {
       if (property) {
-        await apiFetch(`/api/admin/properties/${property.id}`, {
+        await apiAuthFetch(`/api/admin/properties/${property.id}`, {
           method: "PUT",
-          headers: authHeaders(token),
           body: JSON.stringify(payload),
         });
       } else {
-        await apiFetch("/api/admin/properties", {
+        await apiAuthFetch("/api/admin/properties", {
           method: "POST",
-          headers: authHeaders(token),
           body: JSON.stringify(payload),
         });
       }
