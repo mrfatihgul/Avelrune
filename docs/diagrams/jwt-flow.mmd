@@ -5,12 +5,18 @@ sequenceDiagram
   participant Auth as auth-service
   participant Property as property-service
 
-  Browser->>Traefik: POST /api/auth/login
-  Traefik->>Gateway: /api/auth/login
+  Note over Browser,Traefik: Public HTTPS :443 — HTTP :80 301 ile yönlenir
+  Browser->>Traefik: HTTPS POST /api/auth/login
+  Note over Traefik: TLS sonlandırma
+  Traefik->>Gateway: HTTP /api/auth/login
   Gateway->>Auth: public, JWT yok
-  Auth-->>Browser: accessToken RS256
+  Auth-->>Gateway: accessToken RS256
+  Gateway-->>Traefik: JSON
+  Traefik-->>Browser: HTTPS yanıt
 
-  Browser->>Traefik: GET /api/properties/mine + Bearer
+  Browser->>Traefik: HTTPS GET /api/properties/mine + Bearer
   Traefik->>Gateway: JWT doğrula
-  Gateway->>Property: X-Authenticated-User-Id / Role
-  Property-->>Browser: sahibin ilanları
+  Gateway->>Property: HTTP X-Authenticated-User-Id / Role
+  Property-->>Gateway: sahibin ilanları
+  Gateway-->>Traefik: JSON
+  Traefik-->>Browser: HTTPS yanıt

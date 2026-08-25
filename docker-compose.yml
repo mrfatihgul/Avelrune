@@ -102,13 +102,14 @@ services:
       PROPERTY_SERVICE_URL: http://property-service:8082
       INQUIRY_SERVICE_URL: http://inquiry-service:8083
       JWT_PUBLIC_KEY_PATH: /app/keys/public.pem
-      CORS_ORIGINS: ${SITE_URL:-http://localhost}
+      CORS_ORIGINS: ${SITE_URL:-https://localhost}
     volumes:
       - jwt-keys:/app/keys:ro
     labels:
       - traefik.enable=true
       - traefik.http.routers.gateway.rule=PathPrefix(`/api`)
-      - traefik.http.routers.gateway.entrypoints=web
+      - traefik.http.routers.gateway.entrypoints=websecure
+      - traefik.http.routers.gateway.tls=true
       - traefik.http.routers.gateway.priority=10
       - traefik.http.services.gateway.loadbalancer.server.port=8080
     depends_on:
@@ -132,15 +133,16 @@ services:
       context: ./frontend
       args:
         API_INTERNAL_URL: http://api-gateway:8080
-        NEXT_PUBLIC_SITE_URL: ${SITE_URL:-http://localhost}
+        NEXT_PUBLIC_SITE_URL: ${SITE_URL:-https://localhost}
     container_name: avelrune-frontend
     environment:
       API_INTERNAL_URL: http://api-gateway:8080
-      NEXT_PUBLIC_SITE_URL: ${SITE_URL:-http://localhost}
+      NEXT_PUBLIC_SITE_URL: ${SITE_URL:-https://localhost}
     labels:
       - traefik.enable=true
       - traefik.http.routers.frontend.rule=PathPrefix(`/`)
-      - traefik.http.routers.frontend.entrypoints=web
+      - traefik.http.routers.frontend.entrypoints=websecure
+      - traefik.http.routers.frontend.tls=true
       - traefik.http.routers.frontend.priority=1
       - traefik.http.services.frontend.loadbalancer.server.port=3000
     depends_on:
@@ -162,11 +164,20 @@ services:
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
       - --providers.docker.network=avelrune-net
+      - --providers.file.filename=/etc/traefik/dynamic.yml
       - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.web.http.redirections.entrypoint.permanent=true
+      - --entrypoints.websecure.address=:443
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./infra/traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - ./infra/tls/localhost.crt:/certs/localhost.crt:ro
+      - ./infra/tls/localhost.key:/certs/localhost.key:ro
     depends_on:
       api-gateway:
         condition: service_healthy

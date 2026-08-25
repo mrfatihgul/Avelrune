@@ -33,7 +33,7 @@
 </head>
 <body>
   <h1>Avelrune mimari diyagramları</h1>
-  <p>Kaynak dosyalar: <code>architecture.mmd</code>, <code>jwt-flow.mmd</code>. Bu sayfayı tarayıcıda açıp PDF olarak kaydedebilirsin.</p>
+  <p>Kaynak dosyalar: <code>architecture.mmd</code>, <code>jwt-flow.mmd</code>. TLS Traefik kenarında biter; Docker içi HTTP kalır. Bu sayfayı tarayıcıda açıp PDF olarak kaydedebilirsin.</p>
   <p class="files">
     <a href="./architecture.mmd" download>architecture.mmd indir</a>
     ·
@@ -44,18 +44,19 @@
   <div class="diagram">
     <pre class="mermaid">
 flowchart LR
-  browser[Tarayıcı :80]
+  browser["Tarayıcı HTTPS :443"]
+  httpIn["HTTP :80"]
 
-  subgraph edge [Kenar]
-    traefik[Traefik]
+  subgraph edge [Kenar — TLS sonlandırma]
+    traefik["Traefik websecure"]
   end
 
-  subgraph apps [Uygulama]
+  subgraph apps [Uygulama — Docker içi HTTP]
     frontend["frontend Next.js :3000"]
     gateway["api-gateway :8080"]
   end
 
-  subgraph services [Mikroservisler]
+  subgraph services [Mikroservisler — HTTP]
     auth["auth-service :8081"]
     property["property-service :8082"]
     inquiry["inquiry-service :8083"]
@@ -66,13 +67,16 @@ flowchart LR
     propertyDb[(property_db)]
     inquiryDb[(inquiry_db)]
     keys[jwt-keys volume]
+    certs["infra/tls localhost.crt"]
   end
 
-  browser --> traefik
-  traefik -->|"/"| frontend
-  traefik -->|"/api/**"| gateway
+  httpIn -->|"301 HTTPS"| traefik
+  browser -->|"TLS"| traefik
+  certs -.-> traefik
+  traefik -->|"HTTP /"| frontend
+  traefik -->|"HTTP /api/**"| gateway
 
-  frontend -->|"SSR API_INTERNAL_URL"| gateway
+  frontend -->|"SSR API_INTERNAL_URL HTTP"| gateway
 
   gateway -->|"/api/auth/**"| auth
   gateway -->|"/api/properties /api/agents /api/admin"| property
@@ -97,15 +101,21 @@ sequenceDiagram
   participant Auth as auth-service
   participant Property as property-service
 
-  Browser->>Traefik: POST /api/auth/login
-  Traefik->>Gateway: /api/auth/login
+  Note over Browser,Traefik: Public HTTPS :443 — HTTP :80 301 ile yönlenir
+  Browser->>Traefik: HTTPS POST /api/auth/login
+  Note over Traefik: TLS sonlandırma
+  Traefik->>Gateway: HTTP /api/auth/login
   Gateway->>Auth: public, JWT yok
-  Auth-->>Browser: accessToken RS256
+  Auth-->>Gateway: accessToken RS256
+  Gateway-->>Traefik: JSON
+  Traefik-->>Browser: HTTPS yanıt
 
-  Browser->>Traefik: GET /api/properties/mine + Bearer
+  Browser->>Traefik: HTTPS GET /api/properties/mine + Bearer
   Traefik->>Gateway: JWT doğrula
-  Gateway->>Property: X-Authenticated-User-Id / Role
-  Property-->>Browser: sahibin ilanları
+  Gateway->>Property: HTTP X-Authenticated-User-Id / Role
+  Property-->>Gateway: sahibin ilanları
+  Gateway-->>Traefik: JSON
+  Traefik-->>Browser: HTTPS yanıt
     </pre>
   </div>
 </body>

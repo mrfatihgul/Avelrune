@@ -1,16 +1,17 @@
 flowchart LR
-  browser[Tarayıcı :80]
+  browser["Tarayıcı HTTPS :443"]
+  httpIn["HTTP :80"]
 
-  subgraph edge [Kenar]
-    traefik[Traefik]
+  subgraph edge [Kenar — TLS sonlandırma]
+    traefik["Traefik websecure"]
   end
 
-  subgraph apps [Uygulama]
+  subgraph apps [Uygulama — Docker içi HTTP]
     frontend["frontend Next.js :3000"]
     gateway["api-gateway :8080"]
   end
 
-  subgraph services [Mikroservisler]
+  subgraph services [Mikroservisler — HTTP]
     auth["auth-service :8081"]
     property["property-service :8082"]
     inquiry["inquiry-service :8083"]
@@ -21,13 +22,16 @@ flowchart LR
     propertyDb[(property_db)]
     inquiryDb[(inquiry_db)]
     keys[jwt-keys volume]
+    certs["infra/tls localhost.crt"]
   end
 
-  browser --> traefik
-  traefik -->|"/"| frontend
-  traefik -->|"/api/**"| gateway
+  httpIn -->|"301 HTTPS"| traefik
+  browser -->|"TLS"| traefik
+  certs -.-> traefik
+  traefik -->|"HTTP /"| frontend
+  traefik -->|"HTTP /api/**"| gateway
 
-  frontend -->|"SSR API_INTERNAL_URL"| gateway
+  frontend -->|"SSR API_INTERNAL_URL HTTP"| gateway
 
   gateway -->|"/api/auth/**"| auth
   gateway -->|"/api/properties /api/agents /api/admin"| property

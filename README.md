@@ -7,9 +7,9 @@ Slogan: **Her adres, bir tercih.**
 ## Mimari
 
 ```text
-Tarayıcı
-  └── Traefik :80
-        ├── /        → frontend (Next.js :3000)
+Tarayıcı HTTPS :443
+  └── Traefik (TLS sonlandırma; HTTP :80 → 301 HTTPS)
+        ├── /        → frontend (Next.js :3000)          HTTP, Docker ağı
         └── /api/**  → api-gateway (Spring Cloud Gateway :8080)
                          ├── /api/auth/**          → auth-service     :8081  → auth_db
                          ├── /api/docs/auth/**     → auth-service Swagger
@@ -22,7 +22,9 @@ Tarayıcı
                          └── /api/docs/gateway/**  → api-gateway OpenAPI (Swagger yok)
 ```
 
-Frontend, mikroservislere doğrudan gitmez. Tarayıcı `/api` istekleri Traefik üzerinden API Gateway’e gider. JWT doğrulaması yalnızca Gateway’de yapılır.
+TLS yalnızca Traefik kenarında biter. Docker içi trafik HTTP kalır. Frontend, mikroservislere doğrudan gitmez. Tarayıcı `/api` istekleri Traefik üzerinden API Gateway’e gider. JWT doğrulaması yalnızca Gateway’de yapılır.
+
+Diyagramlar: `docs/diagrams/` (`architecture.mmd`, `jwt-flow.mmd`, `index.html`).
 
 ## Teknolojiler
 
@@ -37,7 +39,7 @@ Frontend, mikroservislere doğrudan gitmez. Tarayıcı `/api` istekleri Traefik 
 
 | Servis | Görev |
 | --- | --- |
-| `traefik` | Tek public giriş (port 80) |
+| `traefik` | Tek public giriş (HTTPS 443, HTTP 80 → HTTPS) |
 | `frontend` | Public site ve admin paneli |
 | `api-gateway` | `/api/**` yönlendirme, CORS, JWT |
 | `auth-service` | Admin girişi, RS256 JWT üretimi |
@@ -51,7 +53,15 @@ Frontend, mikroservislere doğrudan gitmez. Tarayıcı `/api` istekleri Traefik 
 docker compose up --build
 ```
 
-Uygulama: [http://localhost](http://localhost)
+Uygulama: [https://localhost](https://localhost)
+
+`http://localhost` kalıcı olarak HTTPS’e yönlenir. Sertifika `infra/tls/localhost.crt` (SAN: `localhost`, `127.0.0.1`). İlk ziyarette tarayıcı uyarı verebilir; macOS’ta güvenmek için:
+
+```bash
+sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain infra/tls/localhost.crt
+```
+
+Yeniden üretmek: `sh infra/tls/generate.sh`
 
 Mikroservis portları dışarı açılmaz. Geliştirme için PostgreSQL `localhost:5432` üzerinden erişilebilir.
 
@@ -72,15 +82,15 @@ Admin:
 
 - E-posta: `admin@avelrune.com`
 - Şifre: `AvelruneAdmin2026!`
-- Giriş: [http://localhost/admin/login](http://localhost/admin/login) veya [http://localhost/login](http://localhost/login)
+- Giriş: [https://localhost/admin/login](https://localhost/admin/login) veya [https://localhost/login](https://localhost/login)
 
 Üye:
 
 - E-posta: `user@avelrune.com`
 - Şifre: `AvelruneUser2026!`
-- Giriş: [http://localhost/login](http://localhost/login)
-- Üye ol: [http://localhost/register](http://localhost/register)
-- Evlerim: [http://localhost/my-listings](http://localhost/my-listings)
+- Giriş: [https://localhost/login](https://localhost/login)
+- Üye ol: [https://localhost/register](https://localhost/register)
+- Evlerim: [https://localhost/my-listings](https://localhost/my-listings)
 
 Üye kendi ev ilanını satılık/kiralık yayınlar. Ziyaretçi veya üye, ilan sayfasından sahibine mesaj gönderir. Mesajlar ayrı bir kutuda değil, Evlerim’de ilgili evin altında görünür.
 
@@ -93,7 +103,7 @@ Değişkenler `.env.example` dosyasındadır. `docker compose` varsayılan değe
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` | Veritabanı erişimi |
 | `JWT_EXPIRATION_MS` | Token süresi (varsayılan 8 saat) |
 | `API_INTERNAL_URL` | Frontend SSR’nin gateway adresi (`http://api-gateway:8080`) |
-| `SITE_URL` | Public origin (`http://localhost`) |
+| `SITE_URL` | Public origin (`https://localhost`) |
 
 Şema Flyway ile `**/db/migration` altındadır (yayına giden kısım). Demo seed ayrıdır: `infra/dev/flyway`. Yerel `docker compose` `dev` profilini açıp o klasörü mount eder; production imajında seed SQL yoktur. Hibernate `ddl-auto: validate` kullanır.
 
@@ -139,9 +149,9 @@ PATCH  /api/admin/properties/{id}/featured JWT + ADMIN
 OpenAPI (springdoc) tüm servislerde vardır. Swagger UI yalnızca auth, property ve inquiry servislerindedir:
 
 ```text
-http://localhost/api/docs/auth/swagger-ui/index.html
-http://localhost/api/docs/property/swagger-ui/index.html
-http://localhost/api/docs/inquiries/swagger-ui/index.html
+https://localhost/api/docs/auth/swagger-ui/index.html
+https://localhost/api/docs/property/swagger-ui/index.html
+https://localhost/api/docs/inquiries/swagger-ui/index.html
 ```
 
 Gateway yalnızca spec üretir (`/api/docs/gateway/v3/api-docs`), Swagger UI açmaz.
@@ -167,6 +177,8 @@ avelrune/
 ├── inquiry-service/
 ├── infra/postgres/init.sql
 ├── infra/dev/flyway/
+├── infra/tls/
+├── infra/traefik/
 ├── docker-compose.yml
 ├── .env.example
 └── README.md
