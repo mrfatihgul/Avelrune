@@ -26,18 +26,18 @@ flowchart LR
     certs["infra/tls localhost.crt"]
   end
 
-  httpSite -->|"301 HTTPS"| traefik
+  httpSite -->|"308 HTTPS"| traefik
   browser -->|"TLS"| traefik
   certs -.-> traefik
-  postman -->|"HTTP /api /docs"| gateway
+  postman -->|"HTTP /api /docs"| traefik
   traefik -->|"HTTP /"| frontend
   traefik -->|"HTTP /api/**"| gateway
 
   frontend -->|"SSR API_INTERNAL_URL HTTP"| gateway
 
-  gateway -->|"/api/auth/**"| auth
-  gateway -->|"/api/properties /api/agents /api/admin"| property
-  gateway -->|"/api/inquiries/**"| inquiry
+  gateway -->|"/api/auth /api/docs/auth"| auth
+  gateway -->|"/api/properties /api/agents /api/admin /api/docs/property"| property
+  gateway -->|"/api/inquiries /api/docs/inquiries"| inquiry
 
   auth --> authDb
   auth -->|"private.pem + public.pem"| keys

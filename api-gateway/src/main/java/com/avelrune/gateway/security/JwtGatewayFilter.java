@@ -51,8 +51,8 @@ public class JwtGatewayFilter implements GlobalFilter, Ordered {
             headers.remove(USER_ID_HEADER);
         });
 
-        if (isPublic(method, path)) {
-            if (isOptionalJwt(method, path)) {
+        if (GatewayAccess.isPublic(method, path)) {
+            if (GatewayAccess.isOptionalJwt(method, path)) {
                 return attachOptionalJwt(exchange, chain, builder, request);
             }
             return chain.filter(exchange.mutate().request(builder.build()).build());
@@ -70,7 +70,7 @@ public class JwtGatewayFilter implements GlobalFilter, Ordered {
                 return unauthorized(exchange, "Oturum geçersiz.");
             }
             String role = claims.get("role", String.class);
-            if (requiresAdmin(method, path) && !"ADMIN".equals(role)) {
+            if (GatewayAccess.requiresAdmin(method, path) && !"ADMIN".equals(role)) {
                 return forbidden(exchange);
             }
             attachIdentity(builder, claims);
@@ -82,45 +82,6 @@ public class JwtGatewayFilter implements GlobalFilter, Ordered {
         } catch (JwtException ex) {
             return unauthorized(exchange, "Bu accessToken bu sunucuya ait değil. login isteğini tekrar Send edin ve yeni accessToken değerinin tamamını token kutusuna yapıştırın.");
         }
-    }
-
-    private boolean isPublic(HttpMethod method, String path) {
-        if (path.startsWith("/api/docs/") || path.startsWith("/actuator")) {
-            return true;
-        }
-        if (method == HttpMethod.OPTIONS) {
-            return true;
-        }
-        if (method == HttpMethod.POST && (pathEquals(path, "/api/auth/login") || pathEquals(path, "/api/auth/register"))) {
-            return true;
-        }
-        if (pathEquals(path, "/api/properties/mine") || path.startsWith("/api/properties/owned")) {
-            return false;
-        }
-        if (isOptionalJwt(method, path)) {
-            return true;
-        }
-        if (method == HttpMethod.GET && (pathEquals(path, "/api/properties") || path.startsWith("/api/properties/"))) {
-            return true;
-        }
-        if (method == HttpMethod.GET && (pathEquals(path, "/api/agents") || path.startsWith("/api/agents/"))) {
-            return true;
-        }
-        return false;
-    }
-
-    private boolean requiresAdmin(HttpMethod method, String path) {
-        if (path.startsWith("/api/admin") || path.startsWith("/api/auth/users")) {
-            return true;
-        }
-        if (pathEquals(path, "/api/inquiries/stats")) {
-            return true;
-        }
-        return method == HttpMethod.GET && pathEquals(path, "/api/inquiries");
-    }
-
-    private boolean isOptionalJwt(HttpMethod method, String path) {
-        return method == HttpMethod.POST && pathEquals(path, "/api/inquiries");
     }
 
     private Mono<Void> attachOptionalJwt(
@@ -188,10 +149,6 @@ public class JwtGatewayFilter implements GlobalFilter, Ordered {
         if (uid != null) {
             builder.header(USER_ID_HEADER, String.valueOf(uid));
         }
-    }
-
-    private boolean pathEquals(String path, String expected) {
-        return path.equals(expected) || path.equals(expected + "/");
     }
 
     private Mono<Void> unauthorized(ServerWebExchange exchange, String message) {

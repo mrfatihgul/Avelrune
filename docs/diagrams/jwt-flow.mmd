@@ -5,18 +5,20 @@ sequenceDiagram
   participant Auth as auth-service
   participant Property as property-service
 
-  Note over Browser,Traefik: Public HTTPS :443 — HTTP :80 301 ile yönlenir
+  Note over Browser,Traefik: HTTPS :443 site. HTTP :80 site 308. HTTP :80 /api Postman.
   Browser->>Traefik: HTTPS POST /api/auth/login
   Note over Traefik: TLS sonlandırma
   Traefik->>Gateway: HTTP /api/auth/login
   Gateway->>Auth: public, JWT yok
-  Auth-->>Gateway: accessToken RS256
+  Auth-->>Gateway: accessToken RS256 sub uid role
   Gateway-->>Traefik: JSON
   Traefik-->>Browser: HTTPS yanıt
+  Note over Browser: localStorage avelrune.token
 
   Browser->>Traefik: HTTPS GET /api/properties/mine + Bearer
-  Traefik->>Gateway: JWT doğrula
-  Gateway->>Property: HTTP X-Authenticated-User-Id / Role
-  Property-->>Gateway: sahibin ilanları
+  Traefik->>Gateway: JWT RS256 public.pem
+  Note over Gateway: X-Authenticated silinir. User Role User-Id yazılır.
+  Gateway->>Property: HTTP X-Authenticated-User / Role / User-Id
+  Property-->>Gateway: assigned_user_id eşleşen ilanlar
   Gateway-->>Traefik: JSON
   Traefik-->>Browser: HTTPS yanıt

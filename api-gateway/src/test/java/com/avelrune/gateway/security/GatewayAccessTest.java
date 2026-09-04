@@ -1,0 +1,33 @@
+package com.avelrune.gateway.security;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpMethod;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class GatewayAccessTest {
+
+    @Test
+    void publicCatalogAllowsGetAndHead() {
+        assertTrue(GatewayAccess.isPublic(HttpMethod.GET, "/api/properties"));
+        assertTrue(GatewayAccess.isPublic(HttpMethod.HEAD, "/api/properties"));
+        assertTrue(GatewayAccess.isPublic(HttpMethod.GET, "/api/properties/bebek-te-bogaz"));
+        assertTrue(GatewayAccess.isPublic(HttpMethod.HEAD, "/api/properties/bebek-te-bogaz"));
+        assertTrue(GatewayAccess.isPublic(HttpMethod.HEAD, "/api/agents"));
+    }
+
+    @Test
+    void mineAndOwnedStayPrivateForHead() {
+        assertFalse(GatewayAccess.isPublic(HttpMethod.HEAD, "/api/properties/mine"));
+        assertFalse(GatewayAccess.isPublic(HttpMethod.GET, "/api/properties/mine"));
+        assertFalse(GatewayAccess.isPublic(HttpMethod.HEAD, "/api/properties/owned/1"));
+    }
+
+    @Test
+    void inquiryListRequiresAdminForGetAndHead() {
+        assertTrue(GatewayAccess.requiresAdmin(HttpMethod.GET, "/api/inquiries"));
+        assertTrue(GatewayAccess.requiresAdmin(HttpMethod.HEAD, "/api/inquiries"));
+        assertFalse(GatewayAccess.isPublic(HttpMethod.HEAD, "/api/inquiries"));
+    }
+}

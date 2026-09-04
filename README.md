@@ -9,7 +9,7 @@ Slogan: **Her adres, bir tercih.**
 ```text
 Tarayıcı HTTPS :443
   └── Traefik
-        HTTP :80 site  → 301 HTTPS
+        HTTP :80 site  → 308 HTTPS
         HTTP :80 /api  → api-gateway (Postman / OpenAPI, TLS yok)
         ├── /        → frontend (Next.js :3000)          HTTP, Docker ağı
         └── /api/**  → api-gateway (Spring Cloud Gateway :8080)
@@ -26,7 +26,7 @@ Tarayıcı HTTPS :443
 
 TLS yalnızca Traefik kenarında, site için biter. `/api` hem HTTP hem HTTPS’ten açılır; Postman speçi HTTP’den çeker. Docker içi trafik HTTP kalır. Frontend, mikroservislere doğrudan gitmez. JWT doğrulaması yalnızca Gateway’de yapılır.
 
-Diyagramlar: `docs/diagrams/` (`architecture.mmd`, `jwt-flow.mmd`, `time-series.mmd`, `index.html`).
+Diyagramlar: `docs/diagrams/` (`architecture.mmd`, `jwt-flow.mmd`).
 
 ## Teknolojiler
 
@@ -52,7 +52,7 @@ Diyagramlar: `docs/diagrams/` (`architecture.mmd`, `jwt-flow.mmd`, `time-series.
 ## Çalıştırma
 
 ```bash
-docker compose up --build
+docker compose up --build --remove-orphans
 ```
 
 Uygulama: [https://localhost](https://localhost)
@@ -65,6 +65,17 @@ sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keyc
 
 Yeniden üretmek: `sh infra/tls/generate.sh`
 
+## E2E
+
+Yığın ayaktayken tarayıcıdan üye olup ilan yayınlar:
+
+```bash
+cd e2e
+npm install
+npx playwright install chromium
+npm test
+```
+
 Mikroservis portları dışarı açılmaz. Geliştirme için PostgreSQL `localhost:5432` üzerinden erişilebilir.
 
 İlk açılışta seed data otomatik yüklenir. Site boş gelmez.
@@ -73,7 +84,7 @@ Mikroservis portları dışarı açılmaz. Geliştirme için PostgreSQL `localho
 
 ```bash
 docker compose down -v
-docker compose up --build
+docker compose up --build --remove-orphans
 ```
 
 JWT anahtarları `jwt-keys` volume’unda tutulur; `private.pem` repoya girmez.
@@ -129,6 +140,7 @@ PUT    /api/properties/{id}           JWT (sahip veya ADMIN)
 DELETE /api/properties/{id}           JWT (sahip veya ADMIN)
 GET    /api/properties/{slug}         public
 GET    /api/properties/{slug}/similar public
+GET    /api/properties/id/{id}        public (yalnızca aktif)
 GET    /api/agents                    public
 
 POST  /api/inquiries                   public (JWT isteğe bağlı)
@@ -191,6 +203,8 @@ avelrune/
 ├── auth-service/
 ├── property-service/
 ├── inquiry-service/
+├── e2e/
+├── docs/diagrams/
 ├── infra/postgres/init.sql
 ├── infra/dev/flyway/
 ├── infra/tls/

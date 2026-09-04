@@ -15,3 +15,7 @@ postgres_data/
 **/keys/*.pem
 private.pem
 public.pem
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
