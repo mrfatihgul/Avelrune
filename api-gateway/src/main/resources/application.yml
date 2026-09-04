@@ -11,19 +11,68 @@ spring:
         cors-configurations:
           '[/**]':
             allowedOriginPatterns:
-              - ${CORS_ORIGINS:https://localhost}
-              - https://localhost
-              - https://127.0.0.1
+              - "*"
             allowedMethods:
               - GET
+              - HEAD
               - POST
               - PUT
               - PATCH
               - DELETE
               - OPTIONS
             allowedHeaders: "*"
-            allowCredentials: true
+            exposedHeaders:
+              - X-Access-Token
+            allowCredentials: false
       routes:
+        - id: auth-docs-postman
+          uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/docs/auth/v3/api-docs
+            - Method=GET,HEAD
+          filters:
+            - RewritePath=/api/docs/auth/v3/api-docs, /v3/api-docs
+            - AddRequestHeader=X-Forwarded-Prefix, /api/docs/auth
+            - OpenApiToPostman
+        - id: property-docs-postman
+          uri: ${PROPERTY_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/docs/property/v3/api-docs
+            - Method=GET,HEAD
+          filters:
+            - RewritePath=/api/docs/property/v3/api-docs, /v3/api-docs
+            - AddRequestHeader=X-Forwarded-Prefix, /api/docs/property
+            - OpenApiToPostman
+        - id: inquiry-docs-postman
+          uri: ${INQUIRY_SERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/docs/inquiries/v3/api-docs
+            - Method=GET,HEAD
+          filters:
+            - RewritePath=/api/docs/inquiries/v3/api-docs, /v3/api-docs
+            - AddRequestHeader=X-Forwarded-Prefix, /api/docs/inquiries
+            - OpenApiToPostman
+        - id: auth-docs-json
+          uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/docs/auth/openapi.json,/api/docs/auth/swagger.json
+          filters:
+            - RewritePath=/api/docs/auth/.*, /v3/api-docs
+            - AddRequestHeader=X-Forwarded-Prefix, /api/docs/auth
+        - id: property-docs-json
+          uri: ${PROPERTY_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/docs/property/openapi.json,/api/docs/property/swagger.json
+          filters:
+            - RewritePath=/api/docs/property/.*, /v3/api-docs
+            - AddRequestHeader=X-Forwarded-Prefix, /api/docs/property
+        - id: inquiry-docs-json
+          uri: ${INQUIRY_SERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/docs/inquiries/openapi.json,/api/docs/inquiries/swagger.json
+          filters:
+            - RewritePath=/api/docs/inquiries/.*, /v3/api-docs
+            - AddRequestHeader=X-Forwarded-Prefix, /api/docs/inquiries
         - id: auth-docs
           uri: ${AUTH_SERVICE_URL:http://localhost:8081}
           predicates:
@@ -84,6 +133,7 @@ management:
         enabled: true
 
 springdoc:
+  writer-with-default-pretty-printer: true
   api-docs:
     path: /api/docs/gateway/v3/api-docs
   swagger-ui:

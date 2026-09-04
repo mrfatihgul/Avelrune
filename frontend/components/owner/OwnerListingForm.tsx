@@ -52,8 +52,8 @@ export function OwnerListingForm({ property }: { property?: PropertyDetail }) {
       totalFloors: Number(form.get("totalFloors")),
       heatingType: String(form.get("heatingType")),
       furnished: form.get("furnished") === "on",
-      latitude: 41.04,
-      longitude: 29.0,
+      latitude: Number(form.get("latitude")),
+      longitude: Number(form.get("longitude")),
       features: String(form.get("features"))
         .split("|")
         .map((item) => item.trim())
@@ -111,6 +111,8 @@ export function OwnerListingForm({ property }: { property?: PropertyDetail }) {
 
   return (
     <form className="form owner-form" onSubmit={onSubmit}>
+      <input type="hidden" name="latitude" defaultValue={property?.latitude ?? 41.04} />
+      <input type="hidden" name="longitude" defaultValue={property?.longitude ?? 29.0} />
       <div className="listing-type-switch">
         <label className="type-chip">
           <input type="radio" name="listingType" value="SALE" defaultChecked={initial.listingType === "SALE"} />

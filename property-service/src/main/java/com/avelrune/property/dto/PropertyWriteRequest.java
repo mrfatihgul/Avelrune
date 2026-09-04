@@ -3,6 +3,7 @@ package com.avelrune.property.dto;
 import com.avelrune.property.enums.HeatingType;
 import com.avelrune.property.enums.ListingType;
 import com.avelrune.property.enums.PropertyType;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -17,24 +18,30 @@ public class PropertyWriteRequest {
 
     @NotBlank
     @Size(max = 180)
+    @Schema(example = "Kadikoy'de Postman ile acilan 2+1")
     private String title;
 
     @NotBlank
     @Size(max = 6000)
+    @Schema(example = "Bu ilan Postman uzerinden yaratildi. Salon sokaga bakiyor ve mutfak ayri duruyor.")
     private String description;
 
     @NotNull
     @Positive
+    @Schema(example = "12500000")
     private BigDecimal price;
 
     @NotNull
+    @Schema(example = "SALE")
     private ListingType listingType;
 
     @NotNull
+    @Schema(example = "APARTMENT")
     private PropertyType propertyType;
 
     @NotBlank
     @Size(max = 80)
+    @Schema(example = "İstanbul")
     private String city;
 
     @NotBlank

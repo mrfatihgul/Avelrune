@@ -102,7 +102,6 @@ services:
       PROPERTY_SERVICE_URL: http://property-service:8082
       INQUIRY_SERVICE_URL: http://inquiry-service:8083
       JWT_PUBLIC_KEY_PATH: /app/keys/public.pem
-      CORS_ORIGINS: ${SITE_URL:-https://localhost}
     volumes:
       - jwt-keys:/app/keys:ro
     labels:
@@ -111,6 +110,15 @@ services:
       - traefik.http.routers.gateway.entrypoints=websecure
       - traefik.http.routers.gateway.tls=true
       - traefik.http.routers.gateway.priority=10
+      - traefik.http.routers.gateway.service=gateway
+      - traefik.http.routers.gateway.middlewares=pna
+      - traefik.http.middlewares.pna.headers.customresponseheaders.Access-Control-Allow-Private-Network=true
+      - traefik.http.middlewares.pna.headers.customresponseheaders.Access-Control-Allow-Local-Network=true
+      - traefik.http.routers.gateway-http.rule=PathPrefix(`/api`)
+      - traefik.http.routers.gateway-http.entrypoints=web
+      - traefik.http.routers.gateway-http.priority=20
+      - traefik.http.routers.gateway-http.service=gateway
+      - traefik.http.routers.gateway-http.middlewares=pna
       - traefik.http.services.gateway.loadbalancer.server.port=8080
     depends_on:
       auth-service:
@@ -140,10 +148,18 @@ services:
       NEXT_PUBLIC_SITE_URL: ${SITE_URL:-https://localhost}
     labels:
       - traefik.enable=true
+      - traefik.http.middlewares.redirect-https.redirectscheme.scheme=https
+      - traefik.http.middlewares.redirect-https.redirectscheme.permanent=true
       - traefik.http.routers.frontend.rule=PathPrefix(`/`)
       - traefik.http.routers.frontend.entrypoints=websecure
       - traefik.http.routers.frontend.tls=true
       - traefik.http.routers.frontend.priority=1
+      - traefik.http.routers.frontend.service=frontend
+      - traefik.http.routers.frontend-http.rule=PathPrefix(`/`) && !PathPrefix(`/api`)
+      - traefik.http.routers.frontend-http.entrypoints=web
+      - traefik.http.routers.frontend-http.middlewares=redirect-https
+      - traefik.http.routers.frontend-http.priority=1
+      - traefik.http.routers.frontend-http.service=frontend
       - traefik.http.services.frontend.loadbalancer.server.port=3000
     depends_on:
       api-gateway:
@@ -166,9 +182,6 @@ services:
       - --providers.docker.network=avelrune-net
       - --providers.file.filename=/etc/traefik/dynamic.yml
       - --entrypoints.web.address=:80
-      - --entrypoints.web.http.redirections.entrypoint.to=websecure
-      - --entrypoints.web.http.redirections.entrypoint.scheme=https
-      - --entrypoints.web.http.redirections.entrypoint.permanent=true
       - --entrypoints.websecure.address=:443
     ports:
       - "80:80"

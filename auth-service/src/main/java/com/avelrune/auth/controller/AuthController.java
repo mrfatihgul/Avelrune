@@ -7,6 +7,7 @@ import com.avelrune.auth.dto.UserResponse;
 import com.avelrune.auth.exception.ApiException;
 import com.avelrune.auth.security.AuthHeaders;
 import com.avelrune.auth.service.AuthService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,11 +30,13 @@ public class AuthController {
         this.authService = authService;
     }
 
+    @SecurityRequirements
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
 
+    @SecurityRequirements
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));

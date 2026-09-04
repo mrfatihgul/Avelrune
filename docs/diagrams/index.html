@@ -33,11 +33,13 @@
 </head>
 <body>
   <h1>Avelrune mimari diyagramları</h1>
-  <p>Kaynak dosyalar: <code>architecture.mmd</code>, <code>jwt-flow.mmd</code>. TLS Traefik kenarında biter; Docker içi HTTP kalır. Bu sayfayı tarayıcıda açıp PDF olarak kaydedebilirsin.</p>
+  <p>Kaynak dosyalar: <code>architecture.mmd</code>, <code>jwt-flow.mmd</code>, <code>time-series.mmd</code>. Site HTTPS; <code>/api</code> Postman için HTTP açık. Docker içi HTTP kalır.</p>
   <p class="files">
     <a href="./architecture.mmd" download>architecture.mmd indir</a>
     ·
     <a href="./jwt-flow.mmd" download>jwt-flow.mmd indir</a>
+    ·
+    <a href="./time-series.mmd" download>time-series.mmd indir</a>
   </p>
 
   <h2>Yığın</h2>
@@ -45,10 +47,11 @@
     <pre class="mermaid">
 flowchart LR
   browser["Tarayıcı HTTPS :443"]
-  httpIn["HTTP :80"]
+  httpSite["HTTP :80 site"]
+  postman["Postman / OpenAPI HTTP :80 /api"]
 
-  subgraph edge [Kenar — TLS sonlandırma]
-    traefik["Traefik websecure"]
+  subgraph edge [Kenar]
+    traefik["Traefik"]
   end
 
   subgraph apps [Uygulama — Docker içi HTTP]
@@ -70,9 +73,10 @@ flowchart LR
     certs["infra/tls localhost.crt"]
   end
 
-  httpIn -->|"301 HTTPS"| traefik
+  httpSite -->|"301 HTTPS"| traefik
   browser -->|"TLS"| traefik
   certs -.-> traefik
+  postman -->|"HTTP /api /docs"| gateway
   traefik -->|"HTTP /"| frontend
   traefik -->|"HTTP /api/**"| gateway
 
@@ -116,6 +120,19 @@ sequenceDiagram
   Property-->>Gateway: sahibin ilanları
   Gateway-->>Traefik: JSON
   Traefik-->>Browser: HTTPS yanıt
+    </pre>
+  </div>
+
+  <h2>Time series</h2>
+  <p>Zaman ekseni X, adet Y. Çizgi grafik (örnek veri).</p>
+  <div class="diagram">
+    <pre class="mermaid">
+xychart-beta
+    title "Time series: aylik yeni ilan ve gelen mesaj (ornek)"
+    x-axis [Oca, Sub, Mar, Nis, May, Haz, Tem, Agu, Eyl, Eki, Kas, Ara]
+    y-axis "Adet" 0 --> 28
+    line [4, 6, 8, 7, 11, 14, 12, 9, 10, 13, 15, 12]
+    line [6, 9, 11, 10, 16, 22, 19, 14, 17, 21, 24, 18]
     </pre>
   </div>
 </body>

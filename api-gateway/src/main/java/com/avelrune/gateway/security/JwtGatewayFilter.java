@@ -3,8 +3,11 @@ package com.avelrune.gateway.security;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.security.SignatureException;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -18,6 +21,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -54,13 +58,13 @@ public class JwtGatewayFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange.mutate().request(builder.build()).build());
         }
 
-        String header = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-        if (header == null || !header.startsWith("Bearer ")) {
+        List<String> candidates = BearerTokens.candidates(request.getHeaders());
+        if (candidates.isEmpty()) {
             return unauthorized(exchange, "Giriş yapmanız gerekiyor.");
         }
 
         try {
-            Claims claims = parseClaims(header);
+            Claims claims = parseFirstValid(candidates);
             String email = claims.getSubject();
             if (email == null || email.isBlank()) {
                 return unauthorized(exchange, "Oturum geçersiz.");
@@ -71,8 +75,12 @@ public class JwtGatewayFilter implements GlobalFilter, Ordered {
             }
             attachIdentity(builder, claims);
             return chain.filter(exchange.mutate().request(builder.build()).build());
-        } catch (JwtException | IllegalArgumentException ex) {
-            return unauthorized(exchange, "Oturum geçersiz veya süresi doldu.");
+        } catch (ExpiredJwtException ex) {
+            return unauthorized(exchange, "Oturum süresi doldu. login isteğini tekrar Send edin ve yeni accessToken değerini token kutusuna yapıştırın.");
+        } catch (MalformedJwtException | IllegalArgumentException ex) {
+            return unauthorized(exchange, "accessToken değeri eksik kopyalanmış. Değeri tırnak olmadan tek parça kopyalayıp token kutusuna yapıştırın.");
+        } catch (JwtException ex) {
+            return unauthorized(exchange, "Bu accessToken bu sunucuya ait değil. login isteğini tekrar Send edin ve yeni accessToken değerinin tamamını token kutusuna yapıştırın.");
         }
     }
 
@@ -121,23 +129,48 @@ public class JwtGatewayFilter implements GlobalFilter, Ordered {
             ServerHttpRequest.Builder builder,
             ServerHttpRequest request
     ) {
-        String header = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-        if (header == null || !header.startsWith("Bearer ")) {
+        List<String> candidates = BearerTokens.candidates(request.getHeaders());
+        if (candidates.isEmpty()) {
             return chain.filter(exchange.mutate().request(builder.build()).build());
         }
         try {
-            attachIdentity(builder, parseClaims(header));
+            attachIdentity(builder, parseFirstValid(candidates));
         } catch (JwtException | IllegalArgumentException ex) {
             // keep guest request
         }
         return chain.filter(exchange.mutate().request(builder.build()).build());
     }
 
-    private Claims parseClaims(String authorization) {
+    private Claims parseFirstValid(List<String> candidates) {
+        RuntimeException last = null;
+        for (String candidate : candidates) {
+            try {
+                return parseToken(candidate);
+            } catch (JwtException | IllegalArgumentException ex) {
+                last = ex;
+            }
+        }
+        if (last != null) {
+            throw last;
+        }
+        throw new IllegalArgumentException("token");
+    }
+
+    private Claims parseToken(String token) {
+        try {
+            return parseSigned(token);
+        } catch (SignatureException ex) {
+            publicKeyService.reload();
+            return parseSigned(token);
+        }
+    }
+
+    private Claims parseSigned(String token) {
         return Jwts.parser()
                 .verifyWith(publicKeyService.getPublicKey())
+                .clockSkewSeconds(600)
                 .build()
-                .parseSignedClaims(authorization.substring(7))
+                .parseSignedClaims(token)
                 .getPayload();
     }
 

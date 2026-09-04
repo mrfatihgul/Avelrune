@@ -29,7 +29,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 @Service
@@ -72,7 +71,11 @@ public class PropertyServiceImpl implements PropertyService {
                 rooms, minArea, maxArea, maxBuildingAge, featured,
                 includeInactive ? null : true
         );
-        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 24), resolveSort(sort));
+        Pageable pageable = PageRequest.of(
+                Math.max(page, 0),
+                Math.min(Math.max(size, 1), includeInactive ? 100 : 24),
+                resolveSort(sort)
+        );
         Page<Property> result = propertyRepository.findAll(spec, pageable);
         return new PageResponse<>(
                 result.getContent().stream().map(PropertyMapper::toSummary).toList(),
@@ -119,7 +122,7 @@ public class PropertyServiceImpl implements PropertyService {
                 .orElseThrow(() -> new ApiException(404, "İlan bulunamadı."));
         Specification<Property> spec = (root, query, cb) -> cb.and(
                 cb.isTrue(root.get("active")),
-                cb.equal(cb.lower(root.get("city")), property.getCity().toLowerCase(Locale.ROOT)),
+                PropertySpecifications.equalIgnoreCase(cb, root.get("city"), property.getCity()),
                 cb.notEqual(root.get("id"), property.getId())
         );
         return propertyRepository.findAll(spec, PageRequest.of(0, 3, Sort.by(Sort.Direction.DESC, "featured", "updatedAt")))

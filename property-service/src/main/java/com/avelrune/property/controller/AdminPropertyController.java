@@ -51,36 +51,58 @@ public class AdminPropertyController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PropertyDetailResponse> get(@PathVariable Long id) {
+    public ResponseEntity<PropertyDetailResponse> get(
+            @PathVariable Long id,
+            @RequestHeader(value = "X-Authenticated-Role", required = false) String role
+    ) {
+        AuthHeaders.requireAdmin(role);
         return ResponseEntity.ok(propertyService.getById(id));
     }
 
     @PostMapping
-    public ResponseEntity<PropertyDetailResponse> create(@Valid @RequestBody PropertyWriteRequest request) {
+    public ResponseEntity<PropertyDetailResponse> create(
+            @Valid @RequestBody PropertyWriteRequest request,
+            @RequestHeader(value = "X-Authenticated-Role", required = false) String role
+    ) {
+        AuthHeaders.requireAdmin(role);
         return ResponseEntity.status(HttpStatus.CREATED).body(propertyService.create(request));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<PropertyDetailResponse> update(
             @PathVariable Long id,
-            @Valid @RequestBody PropertyWriteRequest request
+            @Valid @RequestBody PropertyWriteRequest request,
+            @RequestHeader(value = "X-Authenticated-Role", required = false) String role
     ) {
+        AuthHeaders.requireAdmin(role);
         return ResponseEntity.ok(propertyService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(
+            @PathVariable Long id,
+            @RequestHeader(value = "X-Authenticated-Role", required = false) String role
+    ) {
+        AuthHeaders.requireAdmin(role);
         propertyService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/active")
-    public ResponseEntity<PropertyDetailResponse> toggleActive(@PathVariable Long id) {
+    public ResponseEntity<PropertyDetailResponse> toggleActive(
+            @PathVariable Long id,
+            @RequestHeader(value = "X-Authenticated-Role", required = false) String role
+    ) {
+        AuthHeaders.requireAdmin(role);
         return ResponseEntity.ok(propertyService.toggleActive(id));
     }
 
     @PatchMapping("/{id}/featured")
-    public ResponseEntity<PropertyDetailResponse> toggleFeatured(@PathVariable Long id) {
+    public ResponseEntity<PropertyDetailResponse> toggleFeatured(
+            @PathVariable Long id,
+            @RequestHeader(value = "X-Authenticated-Role", required = false) String role
+    ) {
+        AuthHeaders.requireAdmin(role);
         return ResponseEntity.ok(propertyService.toggleFeatured(id));
     }
 }

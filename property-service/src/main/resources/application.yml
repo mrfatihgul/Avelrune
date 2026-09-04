@@ -1,6 +1,11 @@
 server:
   port: 8082
   forward-headers-strategy: framework
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
 
 spring:
   application:
@@ -32,11 +37,13 @@ management:
         enabled: true
 
 springdoc:
+  writer-with-default-pretty-printer: true
+  default-produces-media-type: application/json
   api-docs:
     path: /v3/api-docs
   swagger-ui:
     enabled: false
     path: /swagger-ui.html
-    url: /api/docs/property/v3/api-docs
+    url: /api/docs/property/openapi.json
     config-url: /api/docs/property/v3/api-docs/swagger-config
     disable-swagger-default-url: true

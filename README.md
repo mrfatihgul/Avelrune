@@ -8,7 +8,9 @@ Slogan: **Her adres, bir tercih.**
 
 ```text
 Tarayıcı HTTPS :443
-  └── Traefik (TLS sonlandırma; HTTP :80 → 301 HTTPS)
+  └── Traefik
+        HTTP :80 site  → 301 HTTPS
+        HTTP :80 /api  → api-gateway (Postman / OpenAPI, TLS yok)
         ├── /        → frontend (Next.js :3000)          HTTP, Docker ağı
         └── /api/**  → api-gateway (Spring Cloud Gateway :8080)
                          ├── /api/auth/**          → auth-service     :8081  → auth_db
@@ -22,9 +24,9 @@ Tarayıcı HTTPS :443
                          └── /api/docs/gateway/**  → api-gateway OpenAPI (Swagger yok)
 ```
 
-TLS yalnızca Traefik kenarında biter. Docker içi trafik HTTP kalır. Frontend, mikroservislere doğrudan gitmez. Tarayıcı `/api` istekleri Traefik üzerinden API Gateway’e gider. JWT doğrulaması yalnızca Gateway’de yapılır.
+TLS yalnızca Traefik kenarında, site için biter. `/api` hem HTTP hem HTTPS’ten açılır; Postman speçi HTTP’den çeker. Docker içi trafik HTTP kalır. Frontend, mikroservislere doğrudan gitmez. JWT doğrulaması yalnızca Gateway’de yapılır.
 
-Diyagramlar: `docs/diagrams/` (`architecture.mmd`, `jwt-flow.mmd`, `index.html`).
+Diyagramlar: `docs/diagrams/` (`architecture.mmd`, `jwt-flow.mmd`, `time-series.mmd`, `index.html`).
 
 ## Teknolojiler
 
@@ -39,7 +41,7 @@ Diyagramlar: `docs/diagrams/` (`architecture.mmd`, `jwt-flow.mmd`, `index.html`)
 
 | Servis | Görev |
 | --- | --- |
-| `traefik` | Tek public giriş (HTTPS 443, HTTP 80 → HTTPS) |
+| `traefik` | Site HTTPS 443; HTTP 80 site → HTTPS, `/api` HTTP kalır |
 | `frontend` | Public site ve admin paneli |
 | `api-gateway` | `/api/**` yönlendirme, CORS, JWT |
 | `auth-service` | Admin girişi, RS256 JWT üretimi |
@@ -146,12 +148,26 @@ PATCH  /api/admin/properties/{id}/active   JWT + ADMIN
 PATCH  /api/admin/properties/{id}/featured JWT + ADMIN
 ```
 
-OpenAPI (springdoc) tüm servislerde vardır. Swagger UI yalnızca auth, property ve inquiry servislerindedir:
+OpenAPI (springdoc) tüm servislerde vardır. Swagger UI yalnızca auth, property ve inquiry servislerindedir.
+
+Postman Import’a `v3/api-docs` yapıştır (bu adres Collection JSON döner):
 
 ```text
-https://localhost/api/docs/auth/swagger-ui/index.html
-https://localhost/api/docs/property/swagger-ui/index.html
-https://localhost/api/docs/inquiries/swagger-ui/index.html
+http://localhost/api/docs/auth/v3/api-docs
+http://localhost/api/docs/property/v3/api-docs
+http://localhost/api/docs/inquiries/v3/api-docs
+```
+
+Ortamda yalnızca `baseUrl` (`http://localhost`) ve `token` olsun. `login` yanıtındaki `accessToken` değerini `token` VALUE kutusuna sen yapıştır. Koleksiyon bu değeri kendiliğinden yazmaz. Token kutusunda `{{token}}` dursun.
+
+Swagger UI OpenAPI spec’i `openapi.json` üzerinden okur.
+
+Swagger UI:
+
+```text
+http://localhost/api/docs/auth/swagger-ui/index.html
+http://localhost/api/docs/property/swagger-ui/index.html
+http://localhost/api/docs/inquiries/swagger-ui/index.html
 ```
 
 Gateway yalnızca spec üretir (`/api/docs/gateway/v3/api-docs`), Swagger UI açmaz.

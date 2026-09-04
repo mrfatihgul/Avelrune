@@ -5,6 +5,7 @@ import { ActiveFilters } from "@/components/property/ActiveFilters";
 import { Filters } from "@/components/property/Filters";
 import { PropertyCard } from "@/components/property/PropertyCard";
 import { SortSelect } from "@/components/property/SortSelect";
+import { ListingsPager } from "@/components/property/ListingsPager";
 import { getFilterMeta, getProperties } from "@/lib/format";
 import { SearchParams } from "@/lib/types";
 
@@ -60,11 +61,16 @@ export default async function ListingsPage({
               Bu ölçütlere uyan ilan yok. Filtreleri azaltmayı deneyin.
             </div>
           ) : (
-            <div className="listing-grid">
-              {properties.content.map((property) => (
-                <PropertyCard key={property.id} property={property} />
-              ))}
-            </div>
+            <>
+              <div className="listing-grid">
+                {properties.content.map((property) => (
+                  <PropertyCard key={property.id} property={property} />
+                ))}
+              </div>
+              <Suspense>
+                <ListingsPager page={properties.page} totalPages={properties.totalPages} />
+              </Suspense>
+            </>
           )}
         </div>
       </section>

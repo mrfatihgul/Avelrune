@@ -1,6 +1,11 @@
 server:
   port: 8081
   forward-headers-strategy: framework
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
 
 spring:
   application:
@@ -36,11 +41,13 @@ jwt:
   expiration-ms: ${JWT_EXPIRATION_MS:28800000}
 
 springdoc:
+  writer-with-default-pretty-printer: true
+  default-produces-media-type: application/json
   api-docs:
     path: /v3/api-docs
   swagger-ui:
     enabled: false
     path: /swagger-ui.html
-    url: /api/docs/auth/v3/api-docs
+    url: /api/docs/auth/openapi.json
     config-url: /api/docs/auth/v3/api-docs/swagger-config
     disable-swagger-default-url: true

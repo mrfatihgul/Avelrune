@@ -27,6 +27,10 @@ export function Filters({
     form.forEach((value, key) => {
       if (typeof value === "string" && value) params.set(key, value);
     });
+    const sort = searchParams.get("sort");
+    if (sort) {
+      params.set("sort", sort);
+    }
     router.push(`${pathname}?${params.toString()}`);
     setOpen(false);
   }

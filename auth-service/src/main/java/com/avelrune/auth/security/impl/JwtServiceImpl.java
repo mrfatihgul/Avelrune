@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.Date;
-import java.util.Map;
 
 @Service
 public class JwtServiceImpl implements JwtService {
@@ -29,7 +28,8 @@ public class JwtServiceImpl implements JwtService {
         Instant now = Instant.now();
         return Jwts.builder()
                 .subject(email)
-                .claims(Map.of("uid", userId, "role", role))
+                .claim("uid", userId)
+                .claim("role", role)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusMillis(expirationMs)))
                 .signWith(rsaKeyService.getPrivateKey(), Jwts.SIG.RS256)

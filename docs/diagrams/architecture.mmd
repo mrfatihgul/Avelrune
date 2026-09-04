@@ -1,9 +1,10 @@
 flowchart LR
   browser["Tarayıcı HTTPS :443"]
-  httpIn["HTTP :80"]
+  httpSite["HTTP :80 site"]
+  postman["Postman / OpenAPI HTTP :80 /api"]
 
-  subgraph edge [Kenar — TLS sonlandırma]
-    traefik["Traefik websecure"]
+  subgraph edge [Kenar]
+    traefik["Traefik"]
   end
 
   subgraph apps [Uygulama — Docker içi HTTP]
@@ -25,9 +26,10 @@ flowchart LR
     certs["infra/tls localhost.crt"]
   end
 
-  httpIn -->|"301 HTTPS"| traefik
+  httpSite -->|"301 HTTPS"| traefik
   browser -->|"TLS"| traefik
   certs -.-> traefik
+  postman -->|"HTTP /api /docs"| gateway
   traefik -->|"HTTP /"| frontend
   traefik -->|"HTTP /api/**"| gateway
 

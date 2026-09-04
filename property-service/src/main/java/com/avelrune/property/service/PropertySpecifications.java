@@ -3,6 +3,9 @@ package com.avelrune.property.service;
 import com.avelrune.property.entity.Property;
 import com.avelrune.property.enums.ListingType;
 import com.avelrune.property.enums.PropertyType;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.ArrayList;
@@ -10,6 +13,10 @@ import java.util.ArrayList;
 public final class PropertySpecifications {
 
     private PropertySpecifications() {
+    }
+
+    public static Predicate equalIgnoreCase(CriteriaBuilder cb, Expression<String> path, String value) {
+        return cb.equal(cb.lower(path), cb.lower(cb.literal(value.trim())));
     }
 
     public static Specification<Property> withFilters(
@@ -35,10 +42,10 @@ public final class PropertySpecifications {
                 predicates = cb.and(predicates, cb.equal(root.get("listingType"), listingType));
             }
             if (city != null && !city.isBlank()) {
-                predicates = cb.and(predicates, cb.equal(cb.lower(root.get("city")), city.toLowerCase()));
+                predicates = cb.and(predicates, equalIgnoreCase(cb, root.get("city"), city));
             }
             if (district != null && !district.isBlank()) {
-                predicates = cb.and(predicates, cb.equal(cb.lower(root.get("district")), district.toLowerCase()));
+                predicates = cb.and(predicates, equalIgnoreCase(cb, root.get("district"), district));
             }
             if (propertyType != null) {
                 predicates = cb.and(predicates, cb.equal(root.get("propertyType"), propertyType));
