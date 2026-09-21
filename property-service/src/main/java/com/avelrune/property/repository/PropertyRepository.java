@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,8 +29,11 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
     @EntityGraph(attributePaths = {"images", "agent"})
     Optional<Property> findBySlug(String slug);
 
+    @Query("select p.id from Property p where p.active = true")
+    List<Long> findActiveIds();
+
     @EntityGraph(attributePaths = "images")
-    List<Property> findByFeaturedTrueAndActiveTrueOrderByUpdatedAtDesc();
+    List<Property> findByIdIn(Collection<Long> ids);
 
     long countByActiveTrue();
 

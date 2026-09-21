@@ -7,6 +7,7 @@ import com.avelrune.property.dto.PropertySummaryResponse;
 import com.avelrune.property.enums.ListingType;
 import com.avelrune.property.enums.PropertyType;
 import com.avelrune.property.service.PropertyService;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -61,7 +62,9 @@ public class PropertyController {
 
     @GetMapping("/featured")
     public ResponseEntity<List<PropertySummaryResponse>> featured() {
-        return ResponseEntity.ok(propertyService.featured());
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(propertyService.featured());
     }
 
     @GetMapping("/meta")

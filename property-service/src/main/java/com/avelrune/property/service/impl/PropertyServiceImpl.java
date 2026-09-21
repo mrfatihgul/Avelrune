@@ -27,12 +27,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 public class PropertyServiceImpl implements PropertyService {
+
+    private static final int HOME_PAGE_LISTING_COUNT = 7;
 
     private final PropertyRepository propertyRepository;
     private final AgentRepository agentRepository;
@@ -88,8 +93,24 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     public List<PropertySummaryResponse> featured() {
-        return propertyRepository.findByFeaturedTrueAndActiveTrueOrderByUpdatedAtDesc()
-                .stream()
+        List<Long> ids = new ArrayList<>(propertyRepository.findActiveIds());
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        int take = Math.min(HOME_PAGE_LISTING_COUNT, ids.size());
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        List<Long> picked = new ArrayList<>(take);
+        for (int i = 0; i < take; i++) {
+            int index = random.nextInt(ids.size());
+            picked.add(ids.remove(index));
+        }
+        Map<Long, Property> byId = new HashMap<>();
+        for (Property property : propertyRepository.findByIdIn(picked)) {
+            byId.put(property.getId(), property);
+        }
+        return picked.stream()
+                .map(byId::get)
+                .filter(Objects::nonNull)
                 .map(PropertyMapper::toSummary)
                 .toList();
     }

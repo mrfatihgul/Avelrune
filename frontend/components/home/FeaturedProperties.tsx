@@ -18,7 +18,7 @@ export function FeaturedProperties({ properties }: { properties: PropertySummary
           </Link>
         </div>
         {properties.length === 0 ? (
-          <p className="empty">Şu anda öne çıkan ilan bulunmuyor.</p>
+          <p className="empty">Şu anda gösterilecek ilan bulunmuyor.</p>
         ) : (
           <>
             <div className="featured-grid">
