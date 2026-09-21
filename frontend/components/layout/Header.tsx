@@ -10,7 +10,7 @@ const links = [
   { href: "/", label: "Ana Sayfa" },
   { href: "/listings?listingType=SALE", label: "Satılık" },
   { href: "/listings?listingType=RENT", label: "Kiralık" },
-  { href: "/listings", label: "Portföy" },
+  { href: "/listings", label: "İlanlar" },
   { href: "/about", label: "Hakkımızda" },
   { href: "/contact", label: "İletişim" },
 ];
@@ -30,6 +30,16 @@ export function Header({ overHero = false }: { overHero?: boolean }) {
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    const desktop = window.matchMedia("(min-width: 1201px)");
+    const closeOnDesktop = () => {
+      if (desktop.matches) setOpen(false);
+    };
+    closeOnDesktop();
+    desktop.addEventListener("change", closeOnDesktop);
+    return () => desktop.removeEventListener("change", closeOnDesktop);
+  }, []);
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";

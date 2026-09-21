@@ -27,7 +27,7 @@ export function Footer() {
         <div>
           <p className="eyebrow">Sayfalar</p>
           <p style={{ marginTop: 12, display: "grid", gap: 8 }}>
-            <Link href="/listings">Portföy</Link>
+            <Link href="/listings">İlanlar</Link>
             <Link href="/about">Hakkımızda</Link>
             <Link href="/contact">İletişim</Link>
             <Link href="/login">Giriş</Link>

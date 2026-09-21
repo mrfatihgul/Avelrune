@@ -5,7 +5,7 @@ import { SiteShell } from "@/components/layout/SiteShell";
 
 export const metadata: Metadata = {
   title: "İletişim",
-  description: "Avelrune Gayrimenkul ile portföy ve görüşme için yazın.",
+  description: "Avelrune Gayrimenkul ile ilanlar ve görüşme için yazın.",
   alternates: { canonical: "/contact" },
 };
 

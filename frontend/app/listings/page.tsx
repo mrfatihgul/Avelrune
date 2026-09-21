@@ -12,8 +12,8 @@ import { SearchParams } from "@/lib/types";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Portföy",
-  description: "Avelrune Gayrimenkul satılık ve kiralık seçilmiş konut portföyü.",
+  title: "İlanlar",
+  description: "Avelrune Gayrimenkul satılık ve kiralık yayınlanan konut ilanları.",
   alternates: { canonical: "/listings" },
 };
 
@@ -31,7 +31,7 @@ export default async function ListingsPage({
     return (
       <SiteShell>
         <section className="page-hero wrap">
-          <h1 className="display">Portföy</h1>
+          <h1 className="display">İlanlar</h1>
           <p className="error-box">İlanlar şu anda yüklenemedi. Lütfen kısa süre sonra yeniden deneyin.</p>
         </section>
       </SiteShell>
@@ -41,7 +41,7 @@ export default async function ListingsPage({
   return (
     <SiteShell>
       <section className="page-hero wrap">
-        <span className="eyebrow">Portföy</span>
+        <span className="eyebrow">İlanlar</span>
         <h1 className="display">Seçilmiş adresler.</h1>
       </section>
       <section className="wrap listing-layout">

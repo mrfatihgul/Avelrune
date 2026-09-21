@@ -27,7 +27,7 @@ export function Regions() {
               <Link key={region.name} href={`/listings?${params.toString()}`} className="region">
                 <Image src={region.image} alt={region.name} fill sizes="40vw" />
                 <div className="region-copy">
-                  <span className="eyebrow">Portföy</span>
+                  <span className="eyebrow">İlanlar</span>
                   <strong>{region.name}</strong>
                 </div>
               </Link>

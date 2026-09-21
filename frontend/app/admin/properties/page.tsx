@@ -49,7 +49,7 @@ export default function AdminPropertiesPage() {
         <div>
           <p className="eyebrow">İlanlar</p>
           <h1 className="display" style={{ fontSize: "2.6rem" }}>
-            Portföy yönetimi
+            İlan yönetimi
           </h1>
         </div>
         <Link href="/admin/properties/new" className="btn">

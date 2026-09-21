@@ -29,7 +29,7 @@ export default async function AboutPage() {
             küçük bir masa düzeniyle ilerliyoruz.
           </p>
           <p>
-            İlan sayısını şişirmiyoruz. Bir yapıyı portföye almadan önce sokağı,
+            İlan sayısını şişirmiyoruz. Bir yapıyı ilanlara almadan önce sokağı,
             gün ışığını, kat planını ve komşuluk mesafesini yerinde görüyoruz.
             Bu yüzden listelerimiz kısa, dosyalarımız uzundur.
           </p>

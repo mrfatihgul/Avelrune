@@ -6,11 +6,11 @@ export function HomeCta() {
       <div className="wrap cta-inner">
         <div>
           <span className="eyebrow">Görüşme</span>
-          <h2 className="display">Portföyünüzü sakin bir dosyayla konuşalım.</h2>
+          <h2 className="display">Evinizi sakin bir dosyayla konuşalım.</h2>
         </div>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           <Link href="/listings" className="btn btn-light">
-            Portföyü incele
+            İlanları incele
           </Link>
           <Link href="/contact" className="btn" style={{ background: "transparent", color: "#f1ece4", borderColor: "#f1ece4" }}>
             Yazın

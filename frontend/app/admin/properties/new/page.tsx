@@ -8,7 +8,7 @@ export default function NewPropertyPage() {
     <AdminShell>
       <p className="eyebrow">Yeni ilan</p>
       <h1 className="display" style={{ fontSize: "2.6rem", marginBottom: 24 }}>
-        Portföye ekle
+        Yeni ilan
       </h1>
       <PropertyForm />
     </AdminShell>

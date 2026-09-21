@@ -10,11 +10,11 @@ export function FeaturedProperties({ properties }: { properties: PropertySummary
       <div className="wrap">
         <div className="section-head">
           <div>
-            <span className="eyebrow">Seçkin portföy</span>
+            <span className="eyebrow">Seçkin ilanlar</span>
             <h2 className="display">Şu anda üzerinde durduğumuz adresler.</h2>
           </div>
           <Link href="/listings" className="btn btn-ghost">
-            Tüm portföy
+            Tüm ilanlar
           </Link>
         </div>
         {properties.length === 0 ? (

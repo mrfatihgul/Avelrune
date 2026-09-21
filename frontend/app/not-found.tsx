@@ -6,7 +6,7 @@ export default function NotFound() {
     <SiteShell>
       <section className="page-hero wrap">
         <span className="eyebrow">404</span>
-        <h1 className="display">Bu adres portföyde yok.</h1>
+        <h1 className="display">Bu adres ilanlarda yok.</h1>
         <p style={{ marginTop: 18, maxWidth: 420 }}>
           Sayfa taşınmış veya hiç açılmamış olabilir.
         </p>
@@ -15,7 +15,7 @@ export default function NotFound() {
             Ana sayfa
           </Link>
           <Link href="/listings" className="btn btn-ghost">
-            Portföy
+            İlanlar
           </Link>
         </div>
       </section>
