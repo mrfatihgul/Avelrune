@@ -1475,6 +1475,14 @@ p {
   gap: 16px 18px;
 }
 
+.field-heading {
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+
 .listing-type-switch {
   display: grid;
   grid-template-columns: 1fr 1fr;

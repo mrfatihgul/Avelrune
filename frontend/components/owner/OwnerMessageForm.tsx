@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { FieldLabel } from "@/components/form/FieldLabel";
 import { apiFetch, authHeaders } from "@/lib/api";
 import { getToken, getUser } from "@/lib/auth";
 
@@ -113,17 +114,5 @@ export function OwnerMessageForm({
         <p className="form-hint">Üye olmadan da yazabilirsiniz. Üyeyseniz mesajınız hesabınızla bağlanır.</p>
       ) : null}
     </form>
-  );
-}
-
-function FieldLabel({ children }: { children: string }) {
-  return (
-    <span>
-      {children}
-      <span className="req" aria-hidden="true">
-        *
-      </span>
-      <span className="sr-only"> (zorunlu)</span>
-    </span>
   );
 }

@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { FieldLabel } from "@/components/form/FieldLabel";
 import { apiAuthFetch } from "@/lib/api";
 import { PropertyDetail } from "@/lib/types";
 
@@ -113,32 +114,35 @@ export function OwnerListingForm({ property }: { property?: PropertyDetail }) {
     <form className="form owner-form" onSubmit={onSubmit}>
       <input type="hidden" name="latitude" defaultValue={property?.latitude ?? 41.04} />
       <input type="hidden" name="longitude" defaultValue={property?.longitude ?? 29.0} />
+      <p className="field-heading">
+        <FieldLabel>İşlem</FieldLabel>
+      </p>
       <div className="listing-type-switch">
         <label className="type-chip">
-          <input type="radio" name="listingType" value="SALE" defaultChecked={initial.listingType === "SALE"} />
+          <input type="radio" name="listingType" value="SALE" required defaultChecked={initial.listingType === "SALE"} />
           Satılık
         </label>
         <label className="type-chip">
-          <input type="radio" name="listingType" value="RENT" defaultChecked={initial.listingType === "RENT"} />
+          <input type="radio" name="listingType" value="RENT" required defaultChecked={initial.listingType === "RENT"} />
           Kiralık
         </label>
       </div>
       <label className="field">
-        <span>Başlık</span>
-        <input name="title" defaultValue={initial.title} required />
+        <FieldLabel>Başlık</FieldLabel>
+        <input name="title" defaultValue={initial.title} required aria-required="true" />
       </label>
       <label className="field">
-        <span>Açıklama</span>
-        <textarea name="description" defaultValue={initial.description} required />
+        <FieldLabel>Açıklama</FieldLabel>
+        <textarea name="description" defaultValue={initial.description} required aria-required="true" />
       </label>
       <div className="owner-form-grid">
         <label className="field">
-          <span>Fiyat</span>
-          <input name="price" defaultValue={initial.price} required />
+          <FieldLabel>Fiyat</FieldLabel>
+          <input name="price" defaultValue={initial.price} required aria-required="true" />
         </label>
         <label className="field">
-          <span>Tip</span>
-          <select name="propertyType" defaultValue={initial.propertyType}>
+          <FieldLabel>Tip</FieldLabel>
+          <select name="propertyType" defaultValue={initial.propertyType} required aria-required="true">
             <option value="APARTMENT">Daire</option>
             <option value="RESIDENCE">Rezidans</option>
             <option value="VILLA">Villa</option>
@@ -148,28 +152,28 @@ export function OwnerListingForm({ property }: { property?: PropertyDetail }) {
           </select>
         </label>
         <label className="field">
-          <span>Oda</span>
-          <input name="roomCount" defaultValue={initial.roomCount} />
+          <FieldLabel>Oda</FieldLabel>
+          <input name="roomCount" defaultValue={initial.roomCount} required aria-required="true" />
         </label>
         <label className="field">
-          <span>Şehir</span>
-          <input name="city" defaultValue={initial.city} />
+          <FieldLabel>Şehir</FieldLabel>
+          <input name="city" defaultValue={initial.city} required aria-required="true" />
         </label>
         <label className="field">
-          <span>İlçe</span>
-          <input name="district" defaultValue={initial.district} />
+          <FieldLabel>İlçe</FieldLabel>
+          <input name="district" defaultValue={initial.district} required aria-required="true" />
         </label>
         <label className="field">
-          <span>Mahalle</span>
-          <input name="neighborhood" defaultValue={initial.neighborhood} />
+          <FieldLabel>Mahalle</FieldLabel>
+          <input name="neighborhood" defaultValue={initial.neighborhood} required aria-required="true" />
         </label>
         <label className="field">
-          <span>Brüt m²</span>
-          <input name="grossArea" defaultValue={initial.grossArea} />
+          <FieldLabel>Brüt m²</FieldLabel>
+          <input name="grossArea" defaultValue={initial.grossArea} required aria-required="true" />
         </label>
         <label className="field">
-          <span>Net m²</span>
-          <input name="netArea" defaultValue={initial.netArea} />
+          <FieldLabel>Net m²</FieldLabel>
+          <input name="netArea" defaultValue={initial.netArea} required aria-required="true" />
         </label>
         <label className="field">
           <span>Bina yaşı</span>
@@ -184,8 +188,8 @@ export function OwnerListingForm({ property }: { property?: PropertyDetail }) {
           <input name="totalFloors" defaultValue={initial.totalFloors} />
         </label>
         <label className="field">
-          <span>Isıtma</span>
-          <select name="heatingType" defaultValue={initial.heatingType}>
+          <FieldLabel>Isıtma</FieldLabel>
+          <select name="heatingType" defaultValue={initial.heatingType} required aria-required="true">
             <option value="COMBI">Kombi</option>
             <option value="CENTRAL">Merkezi</option>
             <option value="FLOOR_HEATING">Yerden ısıtma</option>
@@ -199,8 +203,8 @@ export function OwnerListingForm({ property }: { property?: PropertyDetail }) {
         <input name="features" defaultValue={initial.features} />
       </label>
       <label className="field">
-        <span>Görseller (satır satır URL)</span>
-        <textarea name="imageUrls" defaultValue={initial.imageUrls} />
+        <FieldLabel>Görseller (satır satır URL)</FieldLabel>
+        <textarea name="imageUrls" defaultValue={initial.imageUrls} required aria-required="true" />
       </label>
       <label className="check-line">
         <input type="checkbox" name="furnished" defaultChecked={initial.furnished} /> Eşyalı
