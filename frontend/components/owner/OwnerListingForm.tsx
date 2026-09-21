@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FieldLabel } from "@/components/form/FieldLabel";
 import { ImageUploader } from "@/components/form/ImageUploader";
+import { LocationPickerField } from "@/components/map/LocationMap";
 import { apiAuthFetch } from "@/lib/api";
 import { PropertyDetail } from "@/lib/types";
 
@@ -33,6 +34,10 @@ export function OwnerListingForm({ property }: { property?: PropertyDetail }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [imagesBusy, setImagesBusy] = useState(false);
+  const [coords, setCoords] = useState({
+    lat: property?.latitude ?? 41.04,
+    lng: property?.longitude ?? 29.0,
+  });
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -117,8 +122,6 @@ export function OwnerListingForm({ property }: { property?: PropertyDetail }) {
 
   return (
     <form className="form owner-form" onSubmit={onSubmit}>
-      <input type="hidden" name="latitude" defaultValue={property?.latitude ?? 41.04} />
-      <input type="hidden" name="longitude" defaultValue={property?.longitude ?? 29.0} />
       <p className="field-heading">
         <FieldLabel>İşlem</FieldLabel>
       </p>
@@ -203,6 +206,11 @@ export function OwnerListingForm({ property }: { property?: PropertyDetail }) {
           </select>
         </label>
       </div>
+      <LocationPickerField
+        latitude={coords.lat}
+        longitude={coords.lng}
+        onChange={(lat, lng) => setCoords({ lat, lng })}
+      />
       <label className="field">
         <span>Özellikler ( | ile)</span>
         <input name="features" defaultValue={initial.features} />

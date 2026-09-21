@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FieldLabel } from "@/components/form/FieldLabel";
 import { ImageUploader } from "@/components/form/ImageUploader";
+import { LocationPickerField } from "@/components/map/LocationMap";
 import { apiAuthFetch, apiFetch } from "@/lib/api";
 import { Agent, AuthUser, PropertyDetail } from "@/lib/types";
 
@@ -41,6 +42,10 @@ export function PropertyForm({ property }: { property?: PropertyDetail }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [imagesBusy, setImagesBusy] = useState(false);
+  const [coords, setCoords] = useState({
+    lat: Number(property?.latitude ?? empty.latitude),
+    lng: Number(property?.longitude ?? empty.longitude),
+  });
 
   useEffect(() => {
     apiFetch<Agent[]>("/api/agents").then(setAgents).catch(() => setAgents([]));
@@ -244,6 +249,11 @@ export function PropertyForm({ property }: { property?: PropertyDetail }) {
           </select>
         </label>
       </div>
+      <LocationPickerField
+        latitude={coords.lat}
+        longitude={coords.lng}
+        onChange={(lat, lng) => setCoords({ lat, lng })}
+      />
       <label className="field">
         <span>Özellikler ( | ile)</span>
         <input name="features" defaultValue={initial.features} />
@@ -256,8 +266,6 @@ export function PropertyForm({ property }: { property?: PropertyDetail }) {
           onBusyChange={setImagesBusy}
         />
       </div>
-      <input type="hidden" name="latitude" defaultValue={initial.latitude} />
-      <input type="hidden" name="longitude" defaultValue={initial.longitude} />
       <label>
         <input type="checkbox" name="furnished" defaultChecked={initial.furnished} /> Eşyalı
       </label>

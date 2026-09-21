@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { SiteShell } from "@/components/layout/SiteShell";
+import { LocationMap } from "@/components/map/LocationMap";
 import { OwnerMessageForm } from "@/components/owner/OwnerMessageForm";
 import { PropertyCard } from "@/components/property/PropertyCard";
 import { PropertyGallery } from "@/components/property/PropertyGallery";
@@ -92,15 +93,13 @@ export default async function PropertyDetailPage({ params }: Props) {
               ))}
             </ul>
             <div className="map-block">
-              <div>
-                <div className="map-pin" />
-                <p className="eyebrow">Konum</p>
-                <p style={{ marginTop: 8 }}>
-                  {property.neighborhood}, {property.district}
-                  <br />
-                  {property.city}
-                </p>
-              </div>
+              <p className="eyebrow">Konum</p>
+              <p style={{ margin: "8px 0 16px" }}>
+                {property.neighborhood}, {property.district}
+                <br />
+                {property.city}
+              </p>
+              <LocationMap latitude={property.latitude} longitude={property.longitude} />
             </div>
           </div>
           <aside className="side-panel">
