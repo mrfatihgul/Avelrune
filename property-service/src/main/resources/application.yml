@@ -25,6 +25,14 @@ spring:
       hibernate:
         jdbc:
           time_zone: UTC
+  servlet:
+    multipart:
+      max-file-size: 8MB
+      max-request-size: 10MB
+
+app:
+  media:
+    dir: ${APP_MEDIA_DIR:./data/media}
 
 management:
   endpoints:

@@ -40,6 +40,8 @@ test("üye olup yeni ilan yayınlar", async ({ page }) => {
   await page.getByLabel("Kat", { exact: true }).fill("4");
   await page.getByLabel("Toplam kat").fill("9");
   await page.getByLabel("Isıtma").selectOption({ label: "Kombi" });
+  await page.getByLabel("Görseller").setInputFiles("fixtures/listing.png");
+  await expect(page.locator(".image-upload-item")).toHaveCount(1);
   await page.getByRole("button", { name: "İlanı yayınla" }).click();
 
   await expect(page).toHaveURL(/\/my-listings\/?$/);

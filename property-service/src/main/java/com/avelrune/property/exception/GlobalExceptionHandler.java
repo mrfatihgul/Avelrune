@@ -9,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -41,6 +42,12 @@ public class GlobalExceptionHandler {
                 .map(error -> "Eksik veya geçersiz alan: " + error.getField())
                 .orElse("Geçersiz istek.");
         return ResponseEntity.badRequest().body(new ErrorResponse(400, "Bad Request", message));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleUpload() {
+        return ResponseEntity.badRequest()
+                .body(new ErrorResponse(400, "Bad Request", "Görsel en fazla 8 MB olabilir."));
     }
 
     @ExceptionHandler(Exception.class)

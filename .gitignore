@@ -18,4 +18,4 @@ public.pem
 test-results/
 playwright-report/
 blob-report/
-playwright/.cache/
+data/media/

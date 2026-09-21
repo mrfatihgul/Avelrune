@@ -55,7 +55,9 @@ services:
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-avelrune}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-avelrune}
       SPRING_PROFILES_ACTIVE: dev
+      APP_MEDIA_DIR: /app/media
     volumes:
+      - property-media:/app/media
       - ./infra/dev/flyway/property:/app/db/dev:ro
     depends_on:
       postgres:
@@ -202,6 +204,7 @@ services:
 volumes:
   postgres_data:
   jwt-keys:
+  property-media:
 
 networks:
   avelrune-net:

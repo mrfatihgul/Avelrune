@@ -35,7 +35,7 @@ export function PropertyGallery({ images, title }: { images: PropertyImage[]; ti
       <div className="detail-gallery wrap">
         {images.slice(0, 3).map((image, i) => (
           <button key={image.id} type="button" onClick={() => openAt(i)} aria-label="Galeriyi aç">
-            <Image src={image.url} alt={image.altText || title} fill sizes="50vw" />
+            <Image src={image.url} alt={image.altText || title} fill sizes="50vw" unoptimized={image.url.startsWith("/api/")} />
           </button>
         ))}
       </div>
@@ -54,6 +54,7 @@ export function PropertyGallery({ images, title }: { images: PropertyImage[]; ti
             alt={images[index].altText || title}
             width={1600}
             height={1066}
+            unoptimized={images[index].url.startsWith("/api/")}
           />
           <div className="lightbox-nav">
             <button

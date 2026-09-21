@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FieldLabel } from "@/components/form/FieldLabel";
+import { ImageUploader } from "@/components/form/ImageUploader";
 import { apiAuthFetch, apiFetch } from "@/lib/api";
 import { Agent, AuthUser, PropertyDetail } from "@/lib/types";
 
@@ -30,7 +31,7 @@ const empty = {
   features: "Asansör|Güvenlik",
   agentId: "",
   assignedUserId: "",
-  imageUrls: "/images/properties/p01-1.jpg\n/images/properties/p01-2.jpg\n/images/properties/p01-3.jpg",
+  imageUrls: "",
 };
 
 export function PropertyForm({ property }: { property?: PropertyDetail }) {
@@ -39,6 +40,7 @@ export function PropertyForm({ property }: { property?: PropertyDetail }) {
   const [users, setUsers] = useState<AuthUser[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [imagesBusy, setImagesBusy] = useState(false);
 
   useEffect(() => {
     apiFetch<Agent[]>("/api/agents").then(setAgents).catch(() => setAgents([]));
@@ -77,11 +79,15 @@ export function PropertyForm({ property }: { property?: PropertyDetail }) {
         .filter(Boolean),
       agentId: Number(form.get("agentId")),
       assignedUserId: form.get("assignedUserId") ? Number(form.get("assignedUserId")) : null,
-      imageUrls: String(form.get("imageUrls"))
+      imageUrls: String(form.get("imageUrls") ?? "")
         .split("\n")
         .map((item) => item.trim())
         .filter(Boolean),
     };
+    if (payload.imageUrls.length === 0) {
+      setError("En az bir görsel ekleyin.");
+      return;
+    }
     setLoading(true);
     setError("");
     try {
@@ -242,10 +248,14 @@ export function PropertyForm({ property }: { property?: PropertyDetail }) {
         <span>Özellikler ( | ile)</span>
         <input name="features" defaultValue={initial.features} />
       </label>
-      <label className="field">
-        <FieldLabel>Görseller (satır satır)</FieldLabel>
-        <textarea name="imageUrls" defaultValue={initial.imageUrls} required aria-required="true" />
-      </label>
+      <div className="field">
+        <FieldLabel>Görseller</FieldLabel>
+        <ImageUploader
+          name="imageUrls"
+          initialUrls={initial.imageUrls ? initial.imageUrls.split("\n").filter(Boolean) : []}
+          onBusyChange={setImagesBusy}
+        />
+      </div>
       <input type="hidden" name="latitude" defaultValue={initial.latitude} />
       <input type="hidden" name="longitude" defaultValue={initial.longitude} />
       <label>
@@ -258,7 +268,7 @@ export function PropertyForm({ property }: { property?: PropertyDetail }) {
         <input type="checkbox" name="active" defaultChecked={initial.active} /> Aktif
       </label>
       {error ? <p className="form-error">{error}</p> : null}
-      <button className="btn" type="submit" disabled={loading}>
+      <button className="btn" type="submit" disabled={loading || imagesBusy}>
         {loading ? "Kaydediliyor…" : "Kaydet"}
       </button>
     </form>

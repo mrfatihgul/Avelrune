@@ -15,6 +15,8 @@ class GatewayAccessTest {
         assertTrue(GatewayAccess.isPublic(HttpMethod.GET, "/api/properties/bebek-te-bogaz"));
         assertTrue(GatewayAccess.isPublic(HttpMethod.HEAD, "/api/properties/bebek-te-bogaz"));
         assertTrue(GatewayAccess.isPublic(HttpMethod.HEAD, "/api/agents"));
+        assertTrue(GatewayAccess.isPublic(HttpMethod.GET, "/api/properties/media/photo.jpg"));
+        assertFalse(GatewayAccess.isPublic(HttpMethod.POST, "/api/properties/media"));
     }
 
     @Test

@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FieldLabel } from "@/components/form/FieldLabel";
+import { ImageUploader } from "@/components/form/ImageUploader";
 import { apiAuthFetch } from "@/lib/api";
 import { PropertyDetail } from "@/lib/types";
 
@@ -24,14 +25,14 @@ const empty = {
   heatingType: "COMBI",
   furnished: false,
   features: "Asansör|Güvenlik",
-  imageUrls:
-    "/images/properties/p01-1.jpg\n/images/properties/p01-2.jpg\n/images/properties/p01-3.jpg",
+  imageUrls: "",
 };
 
 export function OwnerListingForm({ property }: { property?: PropertyDetail }) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [imagesBusy, setImagesBusy] = useState(false);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -59,11 +60,15 @@ export function OwnerListingForm({ property }: { property?: PropertyDetail }) {
         .split("|")
         .map((item) => item.trim())
         .filter(Boolean),
-      imageUrls: String(form.get("imageUrls"))
+      imageUrls: String(form.get("imageUrls") ?? "")
         .split("\n")
         .map((item) => item.trim())
         .filter(Boolean),
     };
+    if (payload.imageUrls.length === 0) {
+      setError("En az bir görsel ekleyin.");
+      return;
+    }
     setLoading(true);
     setError("");
     try {
@@ -202,15 +207,19 @@ export function OwnerListingForm({ property }: { property?: PropertyDetail }) {
         <span>Özellikler ( | ile)</span>
         <input name="features" defaultValue={initial.features} />
       </label>
-      <label className="field">
-        <FieldLabel>Görseller (satır satır URL)</FieldLabel>
-        <textarea name="imageUrls" defaultValue={initial.imageUrls} required aria-required="true" />
-      </label>
+      <div className="field">
+        <FieldLabel>Görseller</FieldLabel>
+        <ImageUploader
+          name="imageUrls"
+          initialUrls={initial.imageUrls ? initial.imageUrls.split("\n").filter(Boolean) : []}
+          onBusyChange={setImagesBusy}
+        />
+      </div>
       <label className="check-line">
         <input type="checkbox" name="furnished" defaultChecked={initial.furnished} /> Eşyalı
       </label>
       {error ? <p className="form-error">{error}</p> : null}
-      <button className="btn" type="submit" disabled={loading}>
+      <button className="btn" type="submit" disabled={loading || imagesBusy}>
         {loading ? "Kaydediliyor…" : property ? "İlanı güncelle" : "İlanı yayınla"}
       </button>
     </form>

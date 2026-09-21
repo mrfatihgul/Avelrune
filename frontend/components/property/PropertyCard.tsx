@@ -20,6 +20,7 @@ export function PropertyCard({
               src={property.coverImage}
               alt={property.title}
               fill
+              unoptimized={property.coverImage.startsWith("/api/")}
               sizes={variant === "large" ? "(max-width: 768px) 100vw, 55vw" : "(max-width: 768px) 100vw, 33vw"}
             />
           ) : null}

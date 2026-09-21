@@ -7,13 +7,15 @@ RUN mvn -B -DskipTests package
 
 FROM eclipse-temurin:21-jre-jammy
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl \
+    && apt-get install -y --no-install-recommends curl gosu \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --system --gid 1001 app \
-    && useradd --system --uid 1001 --gid app --home /app app
+    && useradd --system --uid 1001 --gid app --home /app app \
+    && mkdir -p /app/media \
+    && chown app:app /app/media
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
-RUN chown app:app /app/app.jar
-USER app
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh && chown app:app /app/app.jar
 EXPOSE 8082
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["docker-entrypoint.sh"]
