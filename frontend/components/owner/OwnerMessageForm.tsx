@@ -83,26 +83,26 @@ export function OwnerMessageForm({
   }
 
   return (
-    <form className="form owner-message-form" onSubmit={onSubmit}>
+    <form className="form owner-message-form" onSubmit={onSubmit} noValidate>
       <p className="eyebrow">İlan sahibine yazın</p>
       <label className="field">
-        <span>Ad soyad</span>
-        <input name="fullName" defaultValue={user?.fullName ?? ""} autoComplete="name" />
+        <FieldLabel>Ad soyad</FieldLabel>
+        <input name="fullName" defaultValue={user?.fullName ?? ""} autoComplete="name" required aria-required="true" />
         {errors.fullName ? <em className="form-error">{errors.fullName}</em> : null}
       </label>
       <label className="field">
-        <span>Telefon</span>
-        <input name="phone" autoComplete="tel" />
+        <FieldLabel>Telefon</FieldLabel>
+        <input name="phone" autoComplete="tel" required aria-required="true" />
         {errors.phone ? <em className="form-error">{errors.phone}</em> : null}
       </label>
       <label className="field">
-        <span>E-posta</span>
-        <input name="email" type="email" defaultValue={user?.email ?? ""} autoComplete="email" />
+        <FieldLabel>E-posta</FieldLabel>
+        <input name="email" type="email" defaultValue={user?.email ?? ""} autoComplete="email" required aria-required="true" />
         {errors.email ? <em className="form-error">{errors.email}</em> : null}
       </label>
       <label className="field">
-        <span>Mesaj</span>
-        <textarea name="message" placeholder="Bu ev hakkında görüşmek istiyorum." />
+        <FieldLabel>Mesaj</FieldLabel>
+        <textarea name="message" placeholder="Bu ev hakkında görüşmek istiyorum." required aria-required="true" />
         {errors.message ? <em className="form-error">{errors.message}</em> : null}
       </label>
       {status === "error" ? <p className="form-error">{message}</p> : null}
@@ -113,5 +113,17 @@ export function OwnerMessageForm({
         <p className="form-hint">Üye olmadan da yazabilirsiniz. Üyeyseniz mesajınız hesabınızla bağlanır.</p>
       ) : null}
     </form>
+  );
+}
+
+function FieldLabel({ children }: { children: string }) {
+  return (
+    <span>
+      {children}
+      <span className="req" aria-hidden="true">
+        *
+      </span>
+      <span className="sr-only"> (zorunlu)</span>
+    </span>
   );
 }
