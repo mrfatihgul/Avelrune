@@ -122,6 +122,24 @@ Değişkenler `.env.example` dosyasındadır. `docker compose` varsayılan değe
 
 Auth servisi RSA anahtar çiftini `JWT_KEYS_DIR` altında üretir. Gateway aynı volume’dan `public.pem` okur.
 
+RSA anahtar üretimi Bouncy Castle sağlayıcısıyla (2048 bit), PEM okuma/yazma ise
+`PEMParser`, `JcaPEMKeyConverter` ve `JcaPEMWriter` ile yapılır. JJWT, tokenları
+RS256 ile imzalamaya ve doğrulamaya devam eder. OpenSSL kurulumu veya ayrı bir
+anahtar hazırlama komutu gerekmez.
+
+Mevcut `private.pem` (PKCS#8) ve `public.pem` (SubjectPublicKeyInfo) dosyaları
+değiştirilmeden okunur. Yeni dosyalar da aynı biçimlerde oluşturulur. İki dosya
+da yoksa yeni çift üretilir; yalnızca biri varsa veya çift uyumsuzsa servis
+mevcut dosyaların üzerine yazmadan hata verir. Geçiş sırasında `jwt-keys`
+volume’unu koruyun; `docker compose down -v` anahtarları ve veritabanını siler.
+Anahtarlar korunduğunda süresi dolmamış mevcut tokenlar geçerli kalır.
+
+Postman akışı değişmez: login yanıtındaki `accessToken` değerini ortamın `token`
+değişkeninin VALUE alanına yapıştırın. İçe aktarılan koleksiyonun
+`X-Access-Token: {{token}}` header’ı çalışmaya devam eder; elle ayarlanan
+Bearer Token alanında `{{token}}` kullanımı da desteklenir. `baseUrl`,
+endpointler, yanıt alanları ve token süresi değişmez.
+
 ## Endpoint yapısı
 
 ```text
