@@ -1,0 +1,20 @@
+server:
+  address: 127.0.0.1
+
+# Run with profile local and working directory set to this service directory.
+spring:
+  datasource:
+    username: ${SPRING_DATASOURCE_USERNAME:${POSTGRES_USER:avelrune}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${POSTGRES_PASSWORD:avelrune}}
+  flyway:
+    locations: classpath:db/migration,filesystem:../infra/dev/flyway/property
+
+springdoc:
+  swagger-ui:
+    enabled: true
+    url: /v3/api-docs
+    config-url: /v3/api-docs/swagger-config
+
+app:
+  media:
+    dir: ${APP_MEDIA_DIR:../.local/media}

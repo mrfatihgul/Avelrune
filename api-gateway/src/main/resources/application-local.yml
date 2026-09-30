@@ -1,0 +1,5 @@
+server:
+  address: 127.0.0.1
+
+jwt:
+  public-key-path: ${JWT_PUBLIC_KEY_PATH:../.local/keys/public.pem}

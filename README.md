@@ -65,6 +65,130 @@ sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keyc
 
 Yeniden üretmek: `sh infra/tls/generate.sh`
 
+## Hızlı yerel geliştirme (Docker imajı derlemeden)
+
+PostgreSQL Docker'da, uygulamalar bilgisayarında çalışır. Java 21, Maven 3.9+
+ve Node.js 22/npm kurulu olmalı; `java`, `mvn`, `node`, `npm` PATH üzerinde olmalı.
+macOS üzerinde script, PATH üzerinde Maven/Java yoksa standart konumdaki
+IntelliJ IDEA paketinin Maven/JDK araçlarını da kullanabilir.
+İlk çalıştırmada bağımlılıklar indirilir; sonraki değişikliklerde Docker build gerekmez.
+
+Proje kökünde önce veritabanını başlat:
+
+```bash
+bash scripts/dev.sh db
+```
+
+Bu komut yalnızca PostgreSQL'i başlatır. Mevcut `postgres_data` volume'unu
+korur, eksik veritabanlarını veri silmeden oluşturur. Bağlantı
+`localhost:5432`; veritabanları `auth_db`, `property_db`, `inquiry_db`.
+Varsayılan kullanıcı/şifre `avelrune` / `avelrune`; kökteki `.env` ile
+`POSTGRES_USER` ve `POSTGRES_PASSWORD` değiştirilebilir. Var olan volume'un
+şifresi `.env` değiştirmekle otomatik değişmez.
+
+Ardından **her komutu ayrı terminalde**, proje kökünden çalıştır:
+
+```bash
+bash scripts/dev.sh auth
+bash scripts/dev.sh property
+bash scripts/dev.sh inquiry
+bash scripts/dev.sh gateway
+bash scripts/dev.sh frontend
+```
+
+Auth hazır olduktan sonra gateway'i başlat; gateway auth'un oluşturduğu public
+key'i okur. Inquiry'nin ilan işlemleri için property servisi gerekir.
+
+| Bileşen | Yerel adres |
+| --- | --- |
+| Frontend | http://localhost:3000 |
+| API gateway / Postman baseUrl | http://localhost:8080 |
+| Auth | http://localhost:8081 |
+| Property | http://localhost:8082 |
+| Inquiry | http://localhost:8083 |
+| PostgreSQL | localhost:5432 |
+
+Frontend `npm run dev` ile çalışır; kaydedilen değişiklikler otomatik görünür.
+Java değişikliklerinde yalnızca ilgili servisi Ctrl+C ile durdurup aynı komutla
+başlat veya IDE'den yeniden Run/Debug yap. Diğer servisler ve PostgreSQL açık kalır.
+Servis sağlık adresleri `/actuator/health`tir.
+
+Yerel profil demo kullanıcıları/ilanları Flyway ile yükler. JWT anahtarları
+`.local/keys`, yüklenen görseller `.local/media` altında saklanır ve Git'e girmez.
+Yerel ve Docker modları aynı veritabanını, fakat ayrı anahtar ve görsel depolarını
+kullanır: mod değiştirince yeniden giriş yap; diğer modda yüklenmiş görseller
+orada kalır. Verileri korumak için `docker compose down -v` kullanma.
+
+### IntelliJ IDEA ile ayrı Run/Debug
+
+Her servisin `pom.xml` dosyasını Maven projesi olarak içe aktar. Spring Boot
+çalıştırma yapılandırmasında **Active profiles: `local`**, **Working directory:
+ilgili servisin klasörü** seç. Ana sınıflar `AuthApplication`,
+`PropertyApplication`, `InquiryApplication`, `GatewayApplication`.
+Terminal alternatifi, ilgili servis klasöründe:
+
+```bash
+mvn spring-boot:run -Dspring-boot.run.profiles=local
+```
+
+IDE kökteki `.env` dosyasını otomatik okumaz. Özelleştirilmiş veritabanı
+kullanıcı/şifresini Run Configuration ortamına `POSTGRES_USER` ve
+`POSTGRES_PASSWORD` olarak ekle. Standart değerlerde ek ayar gerekmez.
+
+Doğrudan Swagger UI adresleri `http://localhost:8081/swagger-ui.html`,
+`http://localhost:8082/swagger-ui.html`, `http://localhost:8083/swagger-ui.html`.
+Gerçek JWT/rol doğrulaması gateway'de olduğu için kullanıcı yetkisi gerektiren
+Postman ve uygulama testlerini `http://localhost:8080/api/...` üzerinden yap.
+Servis portları bağımsız sağlık, public API ve servis içi testler içindir.
+
+### Docker ve yerel mod arasında geçiş
+
+Tam Docker çalıştırma komutu değişmedi:
+
+```bash
+docker compose up --build --remove-orphans
+```
+
+Docker servisleri de aynı `3000`, `8080`, `8081`, `8082`, `8083` portlarını
+**yalnızca localhost'a** açar. Aynı portu kullanan yerel süreci ve container'ı
+aynı anda başlatma. Tam Docker'dan yerel moda geçerken:
+
+```bash
+docker compose stop frontend api-gateway inquiry-service property-service auth-service traefik
+bash scripts/dev.sh db
+```
+
+Sonra yukarıdaki yerel servis komutlarını başlat. Docker'a dönmeden önce yerel
+süreçleri Ctrl+C ile kapat. Yalnızca bir Docker imajını güncellemek için örnek:
+
+```bash
+docker compose up -d --build --no-deps property-service
+```
+
+Sadece arayüz geliştiriyorsan backend'leri Docker'da bırakabilirsin:
+
+```bash
+docker compose up -d postgres auth-service property-service inquiry-service api-gateway
+docker compose stop frontend
+bash scripts/dev.sh frontend
+```
+
+Bu durumda tarayıcıda `http://localhost:3000` kullan. Yerel frontend her iki
+modda da `http://localhost:8080` gateway'ine bağlanır. Gerekirse script için
+`LOCAL_API_URL` ve `LOCAL_SITE_URL` ortam değişkenlerini kullan.
+Backend'leri yerelde birlikte çalıştırmak en basit düzendir; Docker içindeki
+bir gateway'in localhost adresi bilgisayarın değildir, bu yüzden tek bir
+backend'i yerelle değiştirmek ayrıca container yönlendirmesi gerektirir.
+
+Yerel ortamda E2E testi:
+
+```bash
+cd e2e
+npm install
+npx playwright install chromium
+E2E_BASE_URL=http://localhost:3000 npm test
+```
+
 ## E2E
 
 Yığın ayaktayken tarayıcıdan üye olup ilan yayınlar:
@@ -76,7 +200,7 @@ npx playwright install chromium
 npm test
 ```
 
-Mikroservis portları dışarı açılmaz. Geliştirme için PostgreSQL `localhost:5432` üzerinden erişilebilir.
+Mikroservis portları yalnızca localhost üzerinde açılır. Geliştirme için PostgreSQL `localhost:5432` üzerinden erişilebilir.
 
 İlk açılışta seed data otomatik yüklenir. Site boş gelmez.
 

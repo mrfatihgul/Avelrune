@@ -1,6 +1,6 @@
 import { clearSession, getToken } from "@/lib/auth";
 
-const SERVER_API = process.env.API_INTERNAL_URL || "http://localhost";
+const SERVER_API = process.env.API_INTERNAL_URL || "http://localhost:8080";
 
 export class ApiError extends Error {
   status: number;

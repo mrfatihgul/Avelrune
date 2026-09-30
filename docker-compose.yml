@@ -24,6 +24,8 @@ services:
     build:
       context: ./auth-service
     container_name: avelrune-auth
+    ports:
+      - "127.0.0.1:8081:8081"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/auth_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-avelrune}
@@ -50,6 +52,8 @@ services:
     build:
       context: ./property-service
     container_name: avelrune-property
+    ports:
+      - "127.0.0.1:8082:8082"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/property_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-avelrune}
@@ -75,6 +79,8 @@ services:
     build:
       context: ./inquiry-service
     container_name: avelrune-inquiry
+    ports:
+      - "127.0.0.1:8083:8083"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/inquiry_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-avelrune}
@@ -99,6 +105,8 @@ services:
     build:
       context: ./api-gateway
     container_name: avelrune-gateway
+    ports:
+      - "127.0.0.1:8080:8080"
     environment:
       AUTH_SERVICE_URL: http://auth-service:8081
       PROPERTY_SERVICE_URL: http://property-service:8082
@@ -145,6 +153,8 @@ services:
         API_INTERNAL_URL: http://api-gateway:8080
         NEXT_PUBLIC_SITE_URL: ${SITE_URL:-https://localhost}
     container_name: avelrune-frontend
+    ports:
+      - "127.0.0.1:3000:3000"
     environment:
       API_INTERNAL_URL: http://api-gateway:8080
       NEXT_PUBLIC_SITE_URL: ${SITE_URL:-https://localhost}
