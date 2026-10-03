@@ -1,0 +1,195 @@
+name: avelrune-production
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${PROD_POSTGRES_USER:?Set PROD_POSTGRES_USER in .env.production}
+      POSTGRES_PASSWORD: ${PROD_POSTGRES_PASSWORD:?Set PROD_POSTGRES_PASSWORD in .env.production}
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/01-create-databases.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d auth_db && pg_isready -U \"$$POSTGRES_USER\" -d property_db && pg_isready -U \"$$POSTGRES_USER\" -d inquiry_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    networks:
+      - avelrune-net
+
+  auth-service:
+    build:
+      context: ./auth-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/auth_db
+      SPRING_DATASOURCE_USERNAME: ${PROD_POSTGRES_USER:?Set PROD_POSTGRES_USER in .env.production}
+      SPRING_DATASOURCE_PASSWORD: ${PROD_POSTGRES_PASSWORD:?Set PROD_POSTGRES_PASSWORD in .env.production}
+      JWT_KEYS_DIR: /app/keys
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-28800000}
+      SPRING_PROFILES_ACTIVE: production
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration
+    volumes:
+      - jwt-keys:/app/keys
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8081/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
+    networks:
+      - avelrune-net
+
+  property-service:
+    build:
+      context: ./property-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/property_db
+      SPRING_DATASOURCE_USERNAME: ${PROD_POSTGRES_USER:?Set PROD_POSTGRES_USER in .env.production}
+      SPRING_DATASOURCE_PASSWORD: ${PROD_POSTGRES_PASSWORD:?Set PROD_POSTGRES_PASSWORD in .env.production}
+      SPRING_PROFILES_ACTIVE: production
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration
+      APP_MEDIA_DIR: /app/media
+    volumes:
+      - property-media:/app/media
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8082/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 50s
+    networks:
+      - avelrune-net
+
+  inquiry-service:
+    build:
+      context: ./inquiry-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/inquiry_db
+      SPRING_DATASOURCE_USERNAME: ${PROD_POSTGRES_USER:?Set PROD_POSTGRES_USER in .env.production}
+      SPRING_DATASOURCE_PASSWORD: ${PROD_POSTGRES_PASSWORD:?Set PROD_POSTGRES_PASSWORD in .env.production}
+      PROPERTY_SERVICE_URL: http://property-service:8082
+      SPRING_PROFILES_ACTIVE: production
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration
+    depends_on:
+      postgres:
+        condition: service_healthy
+      property-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8083/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
+    networks:
+      - avelrune-net
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8081
+      PROPERTY_SERVICE_URL: http://property-service:8082
+      INQUIRY_SERVICE_URL: http://inquiry-service:8083
+      JWT_PUBLIC_KEY_PATH: /app/keys/public.pem
+    volumes:
+      - jwt-keys:/app/keys:ro
+    labels:
+      - traefik.enable=true
+      - avelrune.environment=production
+      - traefik.http.routers.gateway.rule=PathPrefix(`/api`)
+      - traefik.http.routers.gateway.entrypoints=websecure
+      - traefik.http.routers.gateway.tls=true
+      - traefik.http.routers.gateway.priority=10
+      - traefik.http.routers.gateway.service=gateway
+      - traefik.http.routers.gateway.middlewares=pna
+      - traefik.http.middlewares.pna.headers.customresponseheaders.Access-Control-Allow-Private-Network=true
+      - traefik.http.middlewares.pna.headers.customresponseheaders.Access-Control-Allow-Local-Network=true
+      - traefik.http.services.gateway.loadbalancer.server.port=8080
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      property-service:
+        condition: service_healthy
+      inquiry-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks:
+      - avelrune-net
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        API_INTERNAL_URL: http://api-gateway:8080
+        NEXT_PUBLIC_SITE_URL: ${PROD_SITE_URL:?Set PROD_SITE_URL in .env.production}
+    environment:
+      API_INTERNAL_URL: http://api-gateway:8080
+      NEXT_PUBLIC_SITE_URL: ${PROD_SITE_URL:?Set PROD_SITE_URL in .env.production}
+    labels:
+      - traefik.enable=true
+      - avelrune.environment=production
+      - traefik.http.routers.frontend.rule=PathPrefix(`/`)
+      - traefik.http.routers.frontend.entrypoints=websecure
+      - traefik.http.routers.frontend.tls=true
+      - traefik.http.routers.frontend.priority=1
+      - traefik.http.routers.frontend.service=frontend
+      - traefik.http.services.frontend.loadbalancer.server.port=3000
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    networks:
+      - avelrune-net
+
+  traefik:
+    image: traefik:v3.6.2
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=avelrune-production-net
+      - --providers.docker.constraints=Label(`avelrune.environment`,`production`)
+      - --providers.file.filename=/etc/traefik/dynamic.yml
+      - --entrypoints.websecure.address=:443
+    ports:
+      - "${PROD_HTTPS_PORT:-18443}:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./infra/traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - ${PROD_TLS_CERT_PATH:?Set PROD_TLS_CERT_PATH in .env.production}:/certs/localhost.crt:ro
+      - ${PROD_TLS_KEY_PATH:?Set PROD_TLS_KEY_PATH in .env.production}:/certs/localhost.key:ro
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    networks:
+      - avelrune-net
+
+volumes:
+  postgres_data:
+  jwt-keys:
+  property-media:
+
+networks:
+  avelrune-net:
+    name: avelrune-production-net
+    driver: bridge

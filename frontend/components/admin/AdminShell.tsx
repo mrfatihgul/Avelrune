@@ -52,8 +52,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             </Link>
           ))}
         </nav>
-        <div style={{ marginTop: "auto" }}>
-          <p style={{ fontSize: "0.85rem", marginBottom: 12 }}>{user.fullName}</p>
+        <div className="admin-account">
+          <p>{user.fullName}</p>
           <button
             className="btn btn-light"
             type="button"

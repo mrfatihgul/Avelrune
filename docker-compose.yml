@@ -116,6 +116,7 @@ services:
       - jwt-keys:/app/keys:ro
     labels:
       - traefik.enable=true
+      - avelrune.environment=development
       - traefik.http.routers.gateway.rule=PathPrefix(`/api`)
       - traefik.http.routers.gateway.entrypoints=websecure
       - traefik.http.routers.gateway.tls=true
@@ -160,6 +161,7 @@ services:
       NEXT_PUBLIC_SITE_URL: ${SITE_URL:-https://localhost}
     labels:
       - traefik.enable=true
+      - avelrune.environment=development
       - traefik.http.middlewares.redirect-https.redirectscheme.scheme=https
       - traefik.http.middlewares.redirect-https.redirectscheme.permanent=true
       - traefik.http.routers.frontend.rule=PathPrefix(`/`)
@@ -192,6 +194,7 @@ services:
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
       - --providers.docker.network=avelrune-net
+      - --providers.docker.constraints=Label(`avelrune.environment`,`development`)
       - --providers.file.filename=/etc/traefik/dynamic.yml
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443

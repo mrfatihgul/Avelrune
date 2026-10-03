@@ -25,7 +25,7 @@ export default function AdminDashboardPage() {
   return (
     <AdminShell>
       <p className="eyebrow">Özet</p>
-      <h1 className="display" style={{ fontSize: "3rem", margin: "8px 0 28px" }}>
+      <h1 className="display admin-page-title">
         İlan durumu
       </h1>
       {error ? <p className="form-error">{error}</p> : null}

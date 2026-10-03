@@ -7,7 +7,7 @@ export default function NewPropertyPage() {
   return (
     <AdminShell>
       <p className="eyebrow">Yeni ilan</p>
-      <h1 className="display" style={{ fontSize: "2.6rem", marginBottom: 24 }}>
+      <h1 className="display admin-page-title">
         Yeni ilan
       </h1>
       <PropertyForm />

@@ -30,7 +30,7 @@ export default function MessagesPage() {
   return (
     <AdminShell>
       <p className="eyebrow">Talepler</p>
-      <h1 className="display" style={{ fontSize: "2.6rem", marginBottom: 24 }}>
+      <h1 className="display admin-page-title">
         İletişim kutusu
       </h1>
       {error ? <p className="form-error">{error}</p> : null}
@@ -39,7 +39,7 @@ export default function MessagesPage() {
       ) : messages.length === 0 ? (
         <p className="empty">Henüz talep yok.</p>
       ) : (
-        <table className="table">
+        <table className="table admin-table admin-messages-table">
           <thead>
             <tr>
               <th>Ad</th>
@@ -52,18 +52,22 @@ export default function MessagesPage() {
           <tbody>
             {messages.map((item) => (
               <tr key={item.id} style={{ opacity: item.read ? 0.6 : 1 }}>
-                <td>{item.fullName}</td>
-                <td>
-                  {item.phone}
-                  <br />
-                  {item.email}
+                <td data-label="Ad">{item.fullName}</td>
+                <td data-label="İletişim">
+                  <span>
+                    {item.phone}
+                    <br />
+                    {item.email}
+                  </span>
                 </td>
-                <td>
-                  {item.propertySlug ? <strong>{item.propertySlug}</strong> : null}
-                  <p>{item.message}</p>
+                <td data-label="Mesaj">
+                  <div>
+                    {item.propertySlug ? <strong>{item.propertySlug}</strong> : null}
+                    <p>{item.message}</p>
+                  </div>
                 </td>
-                <td>{formatDate(item.createdAt)}</td>
-                <td>
+                <td data-label="Tarih">{formatDate(item.createdAt)}</td>
+                <td className="admin-actions-cell">
                   {!item.read ? (
                     <button type="button" onClick={() => markRead(item.id)}>
                       Okundu

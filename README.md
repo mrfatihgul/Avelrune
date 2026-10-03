@@ -51,6 +51,8 @@ Diyagramlar: `docs/diagrams/` (`architecture.mmd`, `jwt-flow.mmd`).
 
 ## Çalıştırma
 
+Bu komut **geliştirme** ortamını açar; `dev` profili demo verileri yükler.
+
 ```bash
 docker compose up --build --remove-orphans
 ```
@@ -65,22 +67,70 @@ sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keyc
 
 Yeniden üretmek: `sh infra/tls/generate.sh`
 
+## Geliştirme ve production ayrımı
+
+`docker-compose.yml` ve servislerin `local` profilleri geliştirme içindir. IntelliJ'deki
+`local` profil ve geliştirme Compose'u aynı PostgreSQL volume'unu kullanır.
+Demo kullanıcılar ve ilanlar yalnızca bu ortamda Flyway seed dosyalarından
+yüklenir. Geçiş yaparken aynı veritabanını production için kullanmayın.
+
+`docker-compose.prod.yml` ayrı Compose projesi (`avelrune-production`) kurar.
+Kendine ait PostgreSQL, JWT anahtar ve görsel volume'ları ile Docker ağı vardır.
+PostgreSQL ve Java servis portları bilgisayara açılmaz; site yalnızca HTTPS
+üzerinden açılır. Production servislerinde yalnızca şema migration'ları çalışır;
+`infra/dev/flyway` mount edilmez ve demo seed yüklenmez. Bu ayrım, mevcut
+geliştirme verilerini silmez veya production ortamına taşımaz.
+Geliştirme Traefik container'ı eski yapılandırmayla zaten çalışıyorsa,
+production ortamını ilk kez açmadan önce yeni ortam filtresini yüklemek için
+geliştirme Traefik'ini bir kez yeniden oluşturun:
+
+```bash
+docker compose up -d --no-deps --force-recreate traefik
+```
+
+Production ayarları için örneği kopyalayıp **boş `PROD_POSTGRES_PASSWORD`
+alanını doldurun**:
+
+```bash
+cp .env.production.example .env.production
+```
+
+Ardından production ortamını başlatın:
+
+```bash
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
+```
+
+Örnek dosyanın varsayılan ayarlarıyla yerel production kontrolü
+`https://localhost:18443` adresindedir; böylece geliştirme ortamı aynı anda
+çalışabilir. Gerçek sunucuda `PROD_SITE_URL` değerini gerçek HTTPS alan adına,
+`PROD_HTTPS_PORT` değerini `443`e ve sertifika yollarını o alan adının
+dosyalarına ayarlayın. `.env.production` Git'e girmez. Production ortamını
+volume'ları koruyarak durdurmak için:
+
+```bash
+docker compose --env-file .env.production -f docker-compose.prod.yml down
+```
+
+Production veritabanı ilk açılışta boştur. Demo hesaplar orada bulunmaz;
+admin hesabı gerekiyorsa ayrıca güvenli biçimde oluşturulmalıdır. Bu Compose
+ayrımı tek başına gerçek sunucu güvenliği, yedekleme veya admin hesabı
+oluşturma sürecinin tamamlandığı anlamına gelmez.
+
 ## Hızlı yerel geliştirme (Docker imajı derlemeden)
 
 PostgreSQL Docker'da, uygulamalar bilgisayarında çalışır. Java 21, Maven 3.9+
 ve Node.js 22/npm kurulu olmalı; `java`, `mvn`, `node`, `npm` PATH üzerinde olmalı.
-macOS üzerinde script, PATH üzerinde Maven/Java yoksa standart konumdaki
-IntelliJ IDEA paketinin Maven/JDK araçlarını da kullanabilir.
 İlk çalıştırmada bağımlılıklar indirilir; sonraki değişikliklerde Docker build gerekmez.
 
 Proje kökünde önce veritabanını başlat:
 
 ```bash
-bash scripts/dev.sh db
+docker compose up -d postgres
 ```
 
-Bu komut yalnızca PostgreSQL'i başlatır. Mevcut `postgres_data` volume'unu
-korur, eksik veritabanlarını veri silmeden oluşturur. Bağlantı
+Bu komut yalnızca PostgreSQL'i başlatır ve mevcut `postgres_data` volume'unu
+korur. İlk kurulumda veritabanları `infra/postgres/init.sql` ile oluşturulur. Bağlantı
 `localhost:5432`; veritabanları `auth_db`, `property_db`, `inquiry_db`.
 Varsayılan kullanıcı/şifre `avelrune` / `avelrune`; kökteki `.env` ile
 `POSTGRES_USER` ve `POSTGRES_PASSWORD` değiştirilebilir. Var olan volume'un
@@ -89,15 +139,19 @@ Varsayılan kullanıcı/şifre `avelrune` / `avelrune`; kökteki `.env` ile
 Ardından **her komutu ayrı terminalde**, proje kökünden çalıştır:
 
 ```bash
-bash scripts/dev.sh auth
-bash scripts/dev.sh property
-bash scripts/dev.sh inquiry
-bash scripts/dev.sh gateway
-bash scripts/dev.sh frontend
+(cd auth-service && mvn spring-boot:run -Dspring-boot.run.profiles=local)
+(cd property-service && mvn spring-boot:run -Dspring-boot.run.profiles=local)
+(cd inquiry-service && mvn spring-boot:run -Dspring-boot.run.profiles=local)
+(cd api-gateway && mvn spring-boot:run -Dspring-boot.run.profiles=local)
+(cd frontend && npm install && NEXT_PUBLIC_SITE_URL=http://localhost:3000 npm run dev)
 ```
 
 Auth hazır olduktan sonra gateway'i başlat; gateway auth'un oluşturduğu public
 key'i okur. Inquiry'nin ilan işlemleri için property servisi gerekir.
+Frontend varsayılan olarak `http://localhost:8080` gateway'ine bağlanır.
+Farklı bir gateway kullanıyorsan frontend komutunda `API_INTERNAL_URL` değerini ayarla.
+Yerel Java süreçleri kökteki `.env` dosyasını otomatik okumaz; varsayılan dışı
+veritabanı bilgilerini `POSTGRES_USER` ve `POSTGRES_PASSWORD` olarak süreçlere aktar.
 
 | Bileşen | Yerel adres |
 | --- | --- |
@@ -115,7 +169,7 @@ Servis sağlık adresleri `/actuator/health`tir.
 
 Yerel profil demo kullanıcıları/ilanları Flyway ile yükler. JWT anahtarları
 `.local/keys`, yüklenen görseller `.local/media` altında saklanır ve Git'e girmez.
-Yerel ve Docker modları aynı veritabanını, fakat ayrı anahtar ve görsel depolarını
+Yerel ve **geliştirme** Docker modları aynı veritabanını, fakat ayrı anahtar ve görsel depolarını
 kullanır: mod değiştirince yeniden giriş yap; diğer modda yüklenmiş görseller
 orada kalır. Verileri korumak için `docker compose down -v` kullanma.
 
@@ -155,7 +209,7 @@ aynı anda başlatma. Tam Docker'dan yerel moda geçerken:
 
 ```bash
 docker compose stop frontend api-gateway inquiry-service property-service auth-service traefik
-bash scripts/dev.sh db
+docker compose up -d postgres
 ```
 
 Sonra yukarıdaki yerel servis komutlarını başlat. Docker'a dönmeden önce yerel
@@ -170,12 +224,12 @@ Sadece arayüz geliştiriyorsan backend'leri Docker'da bırakabilirsin:
 ```bash
 docker compose up -d postgres auth-service property-service inquiry-service api-gateway
 docker compose stop frontend
-bash scripts/dev.sh frontend
+(cd frontend && npm install && NEXT_PUBLIC_SITE_URL=http://localhost:3000 npm run dev)
 ```
 
 Bu durumda tarayıcıda `http://localhost:3000` kullan. Yerel frontend her iki
-modda da `http://localhost:8080` gateway'ine bağlanır. Gerekirse script için
-`LOCAL_API_URL` ve `LOCAL_SITE_URL` ortam değişkenlerini kullan.
+modda da `http://localhost:8080` gateway'ine bağlanır. Farklı adresler için
+`API_INTERNAL_URL` ve `NEXT_PUBLIC_SITE_URL` ortam değişkenlerini kullan.
 Backend'leri yerelde birlikte çalıştırmak en basit düzendir; Docker içindeki
 bir gateway'in localhost adresi bilgisayarın değildir, bu yüzden tek bir
 backend'i yerelle değiştirmek ayrıca container yönlendirmesi gerektirir.
@@ -204,16 +258,21 @@ Mikroservis portları yalnızca localhost üzerinde açılır. Geliştirme için
 
 İlk açılışta seed data otomatik yüklenir. Site boş gelmez.
 
-`auth_db`, `property_db` ve `inquiry_db` ilk volume oluşturuluşunda `infra/postgres/init.sql` ile açılır. Mevcut volume’da bu veritabanları yoksa:
+`auth_db`, `property_db` ve `inquiry_db` ilk volume oluşturuluşunda `infra/postgres/init.sql` ile açılır. Eski bir geliştirme volume'unda bunlardan biri eksikse, verileri silmeden oluşturmak için PostgreSQL'i başlatıp şu komutu çalıştır:
 
 ```bash
-docker compose down -v
-docker compose up --build --remove-orphans
+docker compose up -d postgres
+docker compose exec -T postgres sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d postgres' <<'SQL'
+SELECT format('CREATE DATABASE %I', name)
+FROM (VALUES ('auth_db'), ('property_db'), ('inquiry_db')) AS databases(name)
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = name)
+\gexec
+SQL
 ```
 
 JWT anahtarları `jwt-keys` volume’unda tutulur; `private.pem` repoya girmez.
 
-## Demo hesaplar
+## Demo hesaplar (yalnızca geliştirme)
 
 Admin:
 

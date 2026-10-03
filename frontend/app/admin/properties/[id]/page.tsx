@@ -21,7 +21,7 @@ export default function EditPropertyPage() {
   return (
     <AdminShell>
       <p className="eyebrow">Düzenle</p>
-      <h1 className="display" style={{ fontSize: "2.6rem", marginBottom: 24 }}>
+      <h1 className="display admin-page-title">
         {property?.title ?? "İlan"}
       </h1>
       {error ? <p className="form-error">{error}</p> : null}

@@ -48,7 +48,7 @@ export default function AdminPropertiesPage() {
       <div className="results-head">
         <div>
           <p className="eyebrow">İlanlar</p>
-          <h1 className="display" style={{ fontSize: "2.6rem" }}>
+          <h1 className="display admin-page-title">
             İlan yönetimi
           </h1>
         </div>
@@ -60,7 +60,7 @@ export default function AdminPropertiesPage() {
       {!data ? (
         <div className="skeleton" />
       ) : (
-        <table className="table">
+        <table className="table admin-table admin-properties-table">
           <thead>
             <tr>
               <th>Başlık</th>
@@ -73,24 +73,26 @@ export default function AdminPropertiesPage() {
           <tbody>
             {data.content.map((property) => (
               <tr key={property.id}>
-                <td>{property.title}</td>
-                <td>{listingLabel(property.listingType)}</td>
-                <td>{formatPrice(property.price, property.listingType)}</td>
-                <td>
+                <td data-label="Başlık">{property.title}</td>
+                <td data-label="İşlem">{listingLabel(property.listingType)}</td>
+                <td data-label="Fiyat">{formatPrice(property.price, property.listingType)}</td>
+                <td data-label="Durum">
                   {property.active ? "Aktif" : "Pasif"}
                   {property.featured ? " · Öne çıkan" : ""}
                 </td>
-                <td style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                  <Link href={`/admin/properties/${property.id}`}>Düzenle</Link>
-                  <button type="button" onClick={() => patch(`/api/admin/properties/${property.id}/active`)}>
-                    {property.active ? "Pasifleştir" : "Aktifleştir"}
-                  </button>
-                  <button type="button" onClick={() => patch(`/api/admin/properties/${property.id}/featured`)}>
-                    Öne çıkar
-                  </button>
-                  <button type="button" onClick={() => remove(property.id)}>
-                    Sil
-                  </button>
+                <td className="admin-actions-cell">
+                  <div className="admin-row-actions">
+                    <Link href={`/admin/properties/${property.id}`}>Düzenle</Link>
+                    <button type="button" onClick={() => patch(`/api/admin/properties/${property.id}/active`)}>
+                      {property.active ? "Pasifleştir" : "Aktifleştir"}
+                    </button>
+                    <button type="button" onClick={() => patch(`/api/admin/properties/${property.id}/featured`)}>
+                      Öne çıkar
+                    </button>
+                    <button type="button" onClick={() => remove(property.id)}>
+                      Sil
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
