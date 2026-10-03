@@ -59,7 +59,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             type="button"
             onClick={() => {
               clearSession();
-              router.replace("/admin/login");
+              window.location.replace("/");
             }}
           >
             Çıkış

@@ -4,9 +4,11 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/layout/Logo";
 import { loginWithPassword } from "@/lib/login";
+import { useGuestOnly } from "@/lib/useGuestOnly";
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const ready = useGuestOnly();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -28,6 +30,8 @@ export default function AdminLoginPage() {
       setLoading(false);
     }
   }
+
+  if (!ready) return null;
 
   return (
     <div className="login-page">

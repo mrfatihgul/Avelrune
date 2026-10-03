@@ -256,6 +256,54 @@ p {
   font-family: inherit;
 }
 
+.nav-auth-desktop .auth-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  transition: background 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+}
+
+.nav-auth-desktop .auth-action--primary {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper-3);
+}
+
+.header.is-over-hero:not(.is-scrolled) .nav-auth-desktop .auth-action--primary {
+  background: var(--paper-3);
+  border-color: var(--paper-3);
+  color: var(--ink);
+}
+
+.nav-auth-desktop .auth-action:hover {
+  transform: translateY(-1px);
+}
+
+.nav-auth-desktop .auth-action:not(.auth-action--primary):hover {
+  background: rgba(22, 21, 19, 0.08);
+}
+
+.header.is-over-hero:not(.is-scrolled) .nav-auth-desktop .auth-action:not(.auth-action--primary):hover {
+  background: rgba(244, 239, 230, 0.14);
+}
+
+.nav-auth-desktop .auth-action--primary:hover {
+  opacity: 0.82;
+}
+
+.nav-auth .auth-action:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
 .menu-toggle {
   display: none;
   width: 44px;
@@ -350,6 +398,18 @@ p {
   align-items: stretch;
   gap: 0;
   margin-top: 12px;
+}
+
+.mobile-nav .nav-auth .auth-action {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  padding: 12px;
+  font-weight: 600;
+}
+
+.mobile-nav .nav-auth .auth-action:hover {
+  background: var(--paper-2);
 }
 
 .mobile-nav button {

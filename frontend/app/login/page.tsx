@@ -5,9 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SiteShell } from "@/components/layout/SiteShell";
 import { loginWithPassword } from "@/lib/login";
+import { useGuestOnly } from "@/lib/useGuestOnly";
 
 export default function LoginPage() {
   const router = useRouter();
+  const ready = useGuestOnly();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -17,14 +19,16 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
     try {
-      const user = await loginWithPassword(String(form.get("email")), String(form.get("password")));
-      router.replace(user.role === "ADMIN" ? "/admin" : "/my-listings");
+      await loginWithPassword(String(form.get("email")), String(form.get("password")), false);
+      router.replace("/my-listings");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Giriş yapılamadı.");
     } finally {
       setLoading(false);
     }
   }
+
+  if (!ready) return null;
 
   return (
     <SiteShell>

@@ -7,9 +7,11 @@ import { SiteShell } from "@/components/layout/SiteShell";
 import { apiFetch } from "@/lib/api";
 import { saveSession } from "@/lib/auth";
 import { AuthUser } from "@/lib/types";
+import { useGuestOnly } from "@/lib/useGuestOnly";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const ready = useGuestOnly();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -38,6 +40,8 @@ export default function RegisterPage() {
       setLoading(false);
     }
   }
+
+  if (!ready) return null;
 
   return (
     <SiteShell>

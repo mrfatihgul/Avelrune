@@ -1,34 +1,40 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { clearSession, getUser } from "@/lib/auth";
+import { clearSession, getToken, getUser, SESSION_CHANGED_EVENT } from "@/lib/auth";
 import { AuthUser } from "@/lib/types";
 
 export function HeaderAuth() {
   const pathname = usePathname();
-  const router = useRouter();
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null | undefined>(undefined);
 
   useEffect(() => {
-    setUser(getUser());
+    const syncUser = () => setUser(getToken() ? getUser() : null);
+    syncUser();
+    window.addEventListener(SESSION_CHANGED_EVENT, syncUser);
+    window.addEventListener("storage", syncUser);
+    return () => {
+      window.removeEventListener(SESSION_CHANGED_EVENT, syncUser);
+      window.removeEventListener("storage", syncUser);
+    };
   }, [pathname]);
+
+  if (user === undefined) return null;
 
   if (user) {
     return (
       <>
-        {user.role === "ADMIN" ? (
-          <Link href="/admin">Yönetim</Link>
-        ) : (
-          <Link href="/my-listings">Evlerim</Link>
-        )}
+        {user.role === "USER" ? (
+          <Link className="auth-action auth-action--primary" href="/my-listings">Evlerim</Link>
+        ) : null}
         <button
+          className="auth-action"
           type="button"
           onClick={() => {
             clearSession();
-            setUser(null);
-            router.push("/");
+            window.location.replace("/");
           }}
         >
           Çıkış
@@ -39,8 +45,8 @@ export function HeaderAuth() {
 
   return (
     <>
-      <Link href="/login">Giriş</Link>
-      <Link href="/register">Üye Ol</Link>
+      <Link className="auth-action" href="/login">Giriş Yap</Link>
+      <Link className="auth-action auth-action--primary" href="/register">Üye Ol</Link>
     </>
   );
 }
