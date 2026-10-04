@@ -48,6 +48,7 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/register").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auth/me", "/api/auth/users").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/auth/users/*").permitAll()
                         .anyRequest().denyAll()
                 )
                 .exceptionHandling(ex -> ex

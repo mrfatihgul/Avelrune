@@ -16,4 +16,6 @@ public interface AuthService {
     UserResponse me(String email);
 
     List<UserResponse> listUsers();
+
+    void deleteUser(Long id);
 }

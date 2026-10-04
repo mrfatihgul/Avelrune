@@ -29,8 +29,8 @@ public interface PropertyRepository extends JpaRepository<Property, Long>, JpaSp
     @EntityGraph(attributePaths = {"images", "agent"})
     Optional<Property> findBySlug(String slug);
 
-    @Query("select p.id from Property p where p.active = true")
-    List<Long> findActiveIds();
+    @Query("select p.id from Property p where p.active = true and p.featured = true")
+    List<Long> findActiveFeaturedIds();
 
     @EntityGraph(attributePaths = "images")
     List<Property> findByIdIn(Collection<Long> ids);

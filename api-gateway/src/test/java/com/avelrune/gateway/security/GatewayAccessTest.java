@@ -32,4 +32,10 @@ class GatewayAccessTest {
         assertTrue(GatewayAccess.requiresAdmin(HttpMethod.HEAD, "/api/inquiries"));
         assertFalse(GatewayAccess.isPublic(HttpMethod.HEAD, "/api/inquiries"));
     }
+
+    @Test
+    void deletingAUserRequiresAdmin() {
+        assertFalse(GatewayAccess.isPublic(HttpMethod.DELETE, "/api/auth/users/2"));
+        assertTrue(GatewayAccess.requiresAdmin(HttpMethod.DELETE, "/api/auth/users/2"));
+    }
 }

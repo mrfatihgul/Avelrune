@@ -93,7 +93,7 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     public List<PropertySummaryResponse> featured() {
-        List<Long> ids = new ArrayList<>(propertyRepository.findActiveIds());
+        List<Long> ids = new ArrayList<>(propertyRepository.findActiveFeaturedIds());
         if (ids.isEmpty()) {
             return List.of();
         }

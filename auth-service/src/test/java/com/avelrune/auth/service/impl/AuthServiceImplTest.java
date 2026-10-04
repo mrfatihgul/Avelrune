@@ -18,6 +18,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceImplTest {
@@ -78,6 +79,24 @@ class AuthServiceImplTest {
         assertEquals("Bearer", response.getTokenType());
         assertEquals(2L, response.getUser().getId());
         assertEquals("USER", response.getUser().getRole());
+    }
+
+    @Test
+    void deleteUserRemovesExistingUser() {
+        AdminUser user = user(2L, "user@avelrune.com", "USER");
+        when(userRepository.findById(2L)).thenReturn(Optional.of(user));
+
+        service.deleteUser(2L);
+
+        verify(userRepository).delete(user);
+    }
+
+    @Test
+    void deleteUserReturnsNotFoundForUnknownId() {
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        ApiException ex = assertThrows(ApiException.class, () -> service.deleteUser(99L));
+        assertEquals(404, ex.getStatus());
     }
 
     private static AdminUser user(Long id, String email, String role) {

@@ -73,6 +73,14 @@ public class AuthServiceImpl implements AuthService {
                 .toList();
     }
 
+    @Override
+    @Transactional
+    public void deleteUser(Long id) {
+        AdminUser user = userRepository.findById(id)
+                .orElseThrow(() -> new ApiException(404, "Kullanıcı bulunamadı."));
+        userRepository.delete(user);
+    }
+
     private AuthResponse toAuth(AdminUser user) {
         String token = jwtService.generateToken(user.getId(), user.getEmail(), user.getRole());
         return new AuthResponse(

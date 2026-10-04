@@ -330,6 +330,7 @@ POST /api/auth/login          public
 POST /api/auth/register       public
 GET  /api/auth/me             JWT
 GET  /api/auth/users          JWT + ADMIN
+DELETE /api/auth/users/{id}   JWT + ADMIN
 
 GET    /api/properties                public
 GET    /api/properties/featured       public
