@@ -28,7 +28,7 @@ public class AdminUser {
     private String passwordHash;
 
     @Column(nullable = false, length = 40)
-    private String role = "ADMIN";
+    private String role;
 
     @Column(nullable = false)
     private Instant createdAt;
