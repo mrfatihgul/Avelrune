@@ -3,6 +3,7 @@ package com.avelrune.property.service.impl;
 import com.avelrune.property.dto.FilterMetaResponse;
 import com.avelrune.property.dto.PageResponse;
 import com.avelrune.property.dto.PropertyDetailResponse;
+import com.avelrune.property.dto.PropertySearchRequest;
 import com.avelrune.property.dto.PropertyStatsResponse;
 import com.avelrune.property.dto.PropertySummaryResponse;
 import com.avelrune.property.dto.PropertyWriteRequest;
@@ -10,7 +11,6 @@ import com.avelrune.property.entity.Agent;
 import com.avelrune.property.entity.Property;
 import com.avelrune.property.entity.PropertyImage;
 import com.avelrune.property.enums.ListingType;
-import com.avelrune.property.enums.PropertyType;
 import com.avelrune.property.exception.ApiException;
 import com.avelrune.property.repository.AgentRepository;
 import com.avelrune.property.repository.PropertyRepository;
@@ -54,32 +54,14 @@ public class PropertyServiceImpl implements PropertyService {
     }
 
     @Override
-    public PageResponse<PropertySummaryResponse> search(
-            ListingType listingType,
-            String city,
-            String district,
-            PropertyType propertyType,
-            Long minPrice,
-            Long maxPrice,
-            String rooms,
-            Integer minArea,
-            Integer maxArea,
-            Integer maxBuildingAge,
-            Boolean featured,
-            boolean includeInactive,
-            String sort,
-            int page,
-            int size
-    ) {
-        Specification<Property> spec = PropertySpecifications.withFilters(
-                listingType, city, district, propertyType, minPrice, maxPrice,
-                rooms, minArea, maxArea, maxBuildingAge, featured,
-                includeInactive ? null : true
-        );
+    public PageResponse<PropertySummaryResponse> search(PropertySearchRequest request, boolean includeInactive) {
+        Specification<Property> spec = PropertySpecifications.withFilters(request, includeInactive ? null : true);
+        int page = request.page() == null ? 0 : request.page();
+        int size = request.size() == null ? (includeInactive ? 20 : 12) : request.size();
         Pageable pageable = PageRequest.of(
                 Math.max(page, 0),
                 Math.min(Math.max(size, 1), includeInactive ? 100 : 24),
-                resolveSort(sort)
+                resolveSort(request.sort())
         );
         Page<Property> result = propertyRepository.findAll(spec, pageable);
         return new PageResponse<>(

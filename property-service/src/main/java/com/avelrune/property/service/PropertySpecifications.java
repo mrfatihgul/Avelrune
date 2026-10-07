@@ -1,8 +1,7 @@
 package com.avelrune.property.service;
 
 import com.avelrune.property.entity.Property;
-import com.avelrune.property.enums.ListingType;
-import com.avelrune.property.enums.PropertyType;
+import com.avelrune.property.dto.PropertySearchRequest;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
@@ -19,45 +18,32 @@ public final class PropertySpecifications {
         return cb.equal(cb.lower(path), cb.lower(cb.literal(value.trim())));
     }
 
-    public static Specification<Property> withFilters(
-            ListingType listingType,
-            String city,
-            String district,
-            PropertyType propertyType,
-            Long minPrice,
-            Long maxPrice,
-            String rooms,
-            Integer minArea,
-            Integer maxArea,
-            Integer maxBuildingAge,
-            Boolean featured,
-            Boolean active
-    ) {
+    public static Specification<Property> withFilters(PropertySearchRequest request, Boolean active) {
         return (root, query, cb) -> {
             var predicates = cb.conjunction();
             if (active != null) {
                 predicates = cb.and(predicates, cb.equal(root.get("active"), active));
             }
-            if (listingType != null) {
-                predicates = cb.and(predicates, cb.equal(root.get("listingType"), listingType));
+            if (request.listingType() != null) {
+                predicates = cb.and(predicates, cb.equal(root.get("listingType"), request.listingType()));
             }
-            if (city != null && !city.isBlank()) {
-                predicates = cb.and(predicates, equalIgnoreCase(cb, root.get("city"), city));
+            if (request.city() != null && !request.city().isBlank()) {
+                predicates = cb.and(predicates, equalIgnoreCase(cb, root.get("city"), request.city()));
             }
-            if (district != null && !district.isBlank()) {
-                predicates = cb.and(predicates, equalIgnoreCase(cb, root.get("district"), district));
+            if (request.district() != null && !request.district().isBlank()) {
+                predicates = cb.and(predicates, equalIgnoreCase(cb, root.get("district"), request.district()));
             }
-            if (propertyType != null) {
-                predicates = cb.and(predicates, cb.equal(root.get("propertyType"), propertyType));
+            if (request.propertyType() != null) {
+                predicates = cb.and(predicates, cb.equal(root.get("propertyType"), request.propertyType()));
             }
-            if (minPrice != null) {
-                predicates = cb.and(predicates, cb.ge(root.get("price"), minPrice));
+            if (request.minPrice() != null) {
+                predicates = cb.and(predicates, cb.ge(root.get("price"), request.minPrice()));
             }
-            if (maxPrice != null) {
-                predicates = cb.and(predicates, cb.le(root.get("price"), maxPrice));
+            if (request.maxPrice() != null) {
+                predicates = cb.and(predicates, cb.le(root.get("price"), request.maxPrice()));
             }
-            if (rooms != null && !rooms.isBlank()) {
-                String value = rooms.trim();
+            if (request.rooms() != null && !request.rooms().isBlank()) {
+                String value = request.rooms().trim();
                 if (value.endsWith("+") && value.length() > 1) {
                     String prefix = value.substring(0, value.length() - 1).trim();
                     if (prefix.matches("\\d+")) {
@@ -74,17 +60,17 @@ public final class PropertySpecifications {
                     predicates = cb.and(predicates, cb.equal(root.get("roomCount"), value));
                 }
             }
-            if (minArea != null) {
-                predicates = cb.and(predicates, cb.ge(root.get("grossArea"), minArea));
+            if (request.minArea() != null) {
+                predicates = cb.and(predicates, cb.ge(root.get("grossArea"), request.minArea()));
             }
-            if (maxArea != null) {
-                predicates = cb.and(predicates, cb.le(root.get("grossArea"), maxArea));
+            if (request.maxArea() != null) {
+                predicates = cb.and(predicates, cb.le(root.get("grossArea"), request.maxArea()));
             }
-            if (maxBuildingAge != null) {
-                predicates = cb.and(predicates, cb.le(root.get("buildingAge"), maxBuildingAge));
+            if (request.buildingAge() != null) {
+                predicates = cb.and(predicates, cb.le(root.get("buildingAge"), request.buildingAge()));
             }
-            if (featured != null) {
-                predicates = cb.and(predicates, cb.equal(root.get("featured"), featured));
+            if (request.featured() != null) {
+                predicates = cb.and(predicates, cb.equal(root.get("featured"), request.featured()));
             }
             return predicates;
         };

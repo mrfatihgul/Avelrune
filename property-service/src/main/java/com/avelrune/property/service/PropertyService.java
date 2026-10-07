@@ -3,33 +3,16 @@ package com.avelrune.property.service;
 import com.avelrune.property.dto.FilterMetaResponse;
 import com.avelrune.property.dto.PageResponse;
 import com.avelrune.property.dto.PropertyDetailResponse;
+import com.avelrune.property.dto.PropertySearchRequest;
 import com.avelrune.property.dto.PropertyStatsResponse;
 import com.avelrune.property.dto.PropertySummaryResponse;
 import com.avelrune.property.dto.PropertyWriteRequest;
-import com.avelrune.property.enums.ListingType;
-import com.avelrune.property.enums.PropertyType;
 
 import java.util.List;
 
 public interface PropertyService {
 
-    PageResponse<PropertySummaryResponse> search(
-            ListingType listingType,
-            String city,
-            String district,
-            PropertyType propertyType,
-            Long minPrice,
-            Long maxPrice,
-            String rooms,
-            Integer minArea,
-            Integer maxArea,
-            Integer maxBuildingAge,
-            Boolean featured,
-            boolean includeInactive,
-            String sort,
-            int page,
-            int size
-    );
+    PageResponse<PropertySummaryResponse> search(PropertySearchRequest request, boolean includeInactive);
 
     List<PropertySummaryResponse> featured();
 

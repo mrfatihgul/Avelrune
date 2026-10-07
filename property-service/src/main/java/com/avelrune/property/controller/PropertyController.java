@@ -3,22 +3,21 @@ package com.avelrune.property.controller;
 import com.avelrune.property.dto.FilterMetaResponse;
 import com.avelrune.property.dto.PageResponse;
 import com.avelrune.property.dto.PropertyDetailResponse;
+import com.avelrune.property.dto.PropertySearchRequest;
 import com.avelrune.property.dto.PropertySummaryResponse;
-import com.avelrune.property.enums.ListingType;
-import com.avelrune.property.enums.PropertyType;
 import com.avelrune.property.service.PropertyService;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.avelrune.property.dto.PropertyWriteRequest;
@@ -38,26 +37,8 @@ public class PropertyController {
     }
 
     @GetMapping
-    public ResponseEntity<PageResponse<PropertySummaryResponse>> search(
-            @RequestParam(required = false) ListingType listingType,
-            @RequestParam(required = false) String city,
-            @RequestParam(required = false) String district,
-            @RequestParam(required = false) PropertyType propertyType,
-            @RequestParam(required = false) Long minPrice,
-            @RequestParam(required = false) Long maxPrice,
-            @RequestParam(required = false) String rooms,
-            @RequestParam(required = false) Integer minArea,
-            @RequestParam(required = false) Integer maxArea,
-            @RequestParam(required = false) Integer buildingAge,
-            @RequestParam(required = false) Boolean featured,
-            @RequestParam(defaultValue = "newest") String sort,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "12") int size
-    ) {
-        return ResponseEntity.ok(propertyService.search(
-                listingType, city, district, propertyType, minPrice, maxPrice,
-                rooms, minArea, maxArea, buildingAge, featured, false, sort, page, size
-        ));
+    public ResponseEntity<PageResponse<PropertySummaryResponse>> search(@ModelAttribute PropertySearchRequest request) {
+        return ResponseEntity.ok(propertyService.search(request, false));
     }
 
     @GetMapping("/featured")
