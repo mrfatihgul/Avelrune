@@ -7,6 +7,7 @@ import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
 import org.springdoc.core.customizers.OpenApiCustomizer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -16,12 +17,15 @@ import java.util.List;
 public class OpenApiConfig {
 
     @Bean
-    public OpenAPI openAPI() {
+    public OpenAPI openAPI(
+            @Value("${app.openapi.spec-version}") String specVersion,
+            @Value("${app.openapi.api-version}") String apiVersion
+    ) {
         return new OpenAPI()
-                .openapi("3.0.0")
+                .openapi(specVersion)
                 .info(new Info()
                         .title("Avelrune Property API")
-                        .version("1.0.0")
+                        .version(apiVersion)
                         .description("İlan, danışman ve admin uçları."))
                 .servers(List.of(
                         new Server().url("http://localhost").description("Traefik HTTP"),
@@ -31,9 +35,9 @@ public class OpenApiConfig {
     }
 
     @Bean
-    public OpenApiCustomizer postmanCompatibleSpec() {
+    public OpenApiCustomizer postmanCompatibleSpec(@Value("${app.openapi.spec-version}") String specVersion) {
         return openApi -> {
-            openApi.setOpenapi("3.0.0");
+            openApi.setOpenapi(specVersion);
             if (openApi.getPaths() == null) {
                 return;
             }

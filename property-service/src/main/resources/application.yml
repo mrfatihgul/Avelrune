@@ -33,6 +33,9 @@ spring:
 app:
   media:
     dir: ${APP_MEDIA_DIR:./data/media}
+  openapi:
+    spec-version: 3.0.0
+    api-version: 1.0.0
 
 management:
   endpoints:
