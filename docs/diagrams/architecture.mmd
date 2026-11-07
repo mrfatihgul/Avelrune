@@ -1,47 +1,55 @@
-flowchart LR
-  browser["Tarayıcı HTTPS :443"]
-  httpSite["HTTP :80 site"]
-  postman["Postman / OpenAPI HTTP :80 /api"]
+%% Java / Spring backend — servislerin görevi ve birbirleriyle bağlantısı.
+%% Ayrıntılı işlem sırası: backend-senaryo-akisi.mmd
+%% api-gateway/src/main/java/com/avelrune/gateway/security/JwtGatewayFilter.java
+%% api-gateway/src/main/java/com/avelrune/gateway/security/GatewayAccess.java
+%% api-gateway/src/main/resources/application.yml
+%% auth-service/src/main/java/com/avelrune/auth/controller/AuthController.java
+%% auth-service/src/main/java/com/avelrune/auth/service/impl/AuthServiceImpl.java
+%% auth-service/src/main/java/com/avelrune/auth/security/impl/JwtServiceImpl.java
+%% property-service/src/main/java/com/avelrune/property/controller/PropertyController.java
+%% property-service/src/main/java/com/avelrune/property/service/impl/PropertyServiceImpl.java
+%% inquiry-service/src/main/java/com/avelrune/inquiry/controller/InquiryController.java
+%% inquiry-service/src/main/java/com/avelrune/inquiry/service/impl/InquiryServiceImpl.java
+%% inquiry-service/src/main/java/com/avelrune/inquiry/client/impl/PropertyClientImpl.java
 
-  subgraph edge [Kenar]
-    traefik["Traefik"]
+flowchart TB
+  C["İSTEMCİ<br/>Tarayıcı: HTTPS 443<br/>Postman / OpenAPI: HTTP 80 üzerinden API"]
+  T["GİRİŞ NOKTASI — TRAEFIK<br/>HTTPS bağlantısını karşılar<br/>HTTP site isteğini 308 ile HTTPS'e yönlendirir<br/>Siteyi frontend'e, /api isteklerini gateway'e iletir"]
+  F["FRONTEND — Next.js :3000<br/>Kullanıcının gördüğü ekranlar<br/>Sunucudan API çağrıları: API_INTERNAL_URL"]
+  G["API-GATEWAY — Java / Spring :8080<br/>JwtGatewayFilter.java: tokenı doğrular, kimliği header'a ekler<br/>GatewayAccess.java: public / korumalı / admin kontrolü<br/>application.yml: isteği ilgili servise yönlendirir"]
+
+  subgraph SERVICES ["BACKEND SERVİSLERİ — Java / Spring · Docker içinde HTTP"]
+    A["AUTH-SERVICE :8081<br/>AuthController.java → AuthServiceImpl.java<br/>Hesabı bulur, şifreyi kontrol eder<br/>JwtServiceImpl.java: USER veya ADMIN tokenı üretir"]
+    P["PROPERTY-SERVICE :8082<br/>PropertyController.java → PropertyServiceImpl.java<br/>İlanları oluşturur, okur ve yönetir<br/>İlan sahibinin kullanıcı ID'sini tutar"]
+    I["INQUIRY-SERVICE :8083<br/>InquiryController.java → InquiryServiceImpl.java<br/>Mesajı gönderene, ilana ve ilan sahibine bağlar<br/>Durumu admin veya ilgili ilan sahibi değiştirebilir"]
   end
 
-  subgraph apps [Uygulama — Docker içi HTTP]
-    frontend["frontend Next.js :3000"]
-    gateway["api-gateway :8080"]
-  end
+  AD[("auth_db<br/>Hesaplar ve roller")]
+  PD[("property_db<br/>İlanlar ve sahipleri")]
+  ID[("inquiry_db<br/>Mesajlar ve durumları")]
+  K["JWT ANAHTARLARI — jwt-keys<br/>Auth private key ile token imzalar<br/>Gateway public key ile imzayı doğrular"]
+  TLS["HTTPS SERTİFİKASI<br/>infra/tls/localhost.crt"]
 
-  subgraph services [Mikroservisler — HTTP]
-    auth["auth-service :8081"]
-    property["property-service :8082"]
-    inquiry["inquiry-service :8083"]
-  end
+  C --> T
+  TLS -.-> T
+  T -->|"Site"| F
+  T -->|"/api/**"| G
+  F -->|"Sunucudan API çağrısı"| G
+  G -->|"/api/auth/**"| A
+  G -->|"/api/properties · /api/agents · /api/admin"| P
+  G -->|"/api/inquiries/**"| I
+  I -->|"PropertyClientImpl.java: hedef ilanı ve sahibini öğrenir"| P
+  A --> AD
+  P --> PD
+  I --> ID
+  A -.->|"İmzala"| K
+  G -.->|"Doğrula"| K
 
-  subgraph data [Veri]
-    authDb[(auth_db)]
-    propertyDb[(property_db)]
-    inquiryDb[(inquiry_db)]
-    keys[jwt-keys volume]
-    certs["infra/tls localhost.crt"]
-  end
-
-  httpSite -->|"308 HTTPS"| traefik
-  browser -->|"TLS"| traefik
-  certs -.-> traefik
-  postman -->|"HTTP /api /docs"| traefik
-  traefik -->|"HTTP /"| frontend
-  traefik -->|"HTTP /api/**"| gateway
-
-  frontend -->|"SSR API_INTERNAL_URL HTTP"| gateway
-
-  gateway -->|"/api/auth /api/docs/auth"| auth
-  gateway -->|"/api/properties /api/agents /api/admin /api/docs/property"| property
-  gateway -->|"/api/inquiries /api/docs/inquiries"| inquiry
-
-  auth --> authDb
-  auth -->|"private.pem + public.pem"| keys
-  property --> propertyDb
-  inquiry --> inquiryDb
-  inquiry -->|"ilan doğrula"| property
-  gateway -->|"public.pem RS256"| keys
+  classDef gateway fill:#1e3a5f,stroke:#60a5fa,color:#ffffff
+  classDef service fill:#3b2863,stroke:#a78bfa,color:#ffffff
+  classDef result fill:#174b35,stroke:#4ade80,color:#ffffff
+  classDef session fill:#3b3b3b,stroke:#cbd5e1,color:#ffffff
+  class T,G gateway
+  class A,P,I service
+  class AD,PD,ID result
+  class C,F,K,TLS session

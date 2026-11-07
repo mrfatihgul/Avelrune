@@ -91,6 +91,8 @@ export interface PropertyStats {
   featured: number;
 }
 
+export type InquiryStatus = "UNDERREVIEW" | "SOLVED" | "UNSOLVED";
+
 export interface ContactMessage {
   id: number;
   fullName: string;
@@ -103,6 +105,7 @@ export interface ContactMessage {
   senderUserId?: number | null;
   member?: boolean;
   read: boolean;
+  status: InquiryStatus;
   createdAt: string;
 }
 

@@ -1,5 +1,7 @@
 package com.avelrune.inquiry.dto;
 
+import com.avelrune.inquiry.enums.InquirySituation;
+
 import java.time.Instant;
 
 public class InquiryResponse {
@@ -16,6 +18,7 @@ public class InquiryResponse {
     private boolean member;
     private boolean read;
     private Instant createdAt;
+    private InquirySituation status;
 
     public InquiryResponse(
             Long id,
@@ -29,7 +32,8 @@ public class InquiryResponse {
             Long senderUserId,
             boolean member,
             boolean read,
-            Instant createdAt
+            Instant createdAt,
+            InquirySituation status
     ) {
         this.id = id;
         this.fullName = fullName;
@@ -43,6 +47,7 @@ public class InquiryResponse {
         this.member = member;
         this.read = read;
         this.createdAt = createdAt;
+        this.status = status;
     }
 
     public Long getId() {
@@ -92,4 +97,6 @@ public class InquiryResponse {
     public Instant getCreatedAt() {
         return createdAt;
     }
+
+    public InquirySituation getStatus() {return status;}
 }

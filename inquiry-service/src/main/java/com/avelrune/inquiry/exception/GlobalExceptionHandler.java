@@ -9,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -47,6 +48,16 @@ public class GlobalExceptionHandler {
                 })
                 .orElse("Form bilgilerini kontrol edin.");
         return ResponseEntity.badRequest().body(new ErrorResponse(400, "Bad Request", message));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleUnreadableMessage() {
+        return ResponseEntity.badRequest()
+                .body(new ErrorResponse(
+                        400,
+                        "Bad Request",
+                        "İstek gövdesi eksik veya geçersiz."
+                ));
     }
 
     @ExceptionHandler(Exception.class)

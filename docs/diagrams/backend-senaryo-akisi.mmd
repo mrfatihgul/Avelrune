@@ -1,0 +1,82 @@
+%% Java / Spring backend — başarılı isteklerin dosyalar üzerinden kısa akışı.
+%% Bölümler arası oklar kullanıcının sıradaki işlemidir; otomatik backend çağrısı değildir.
+%% Kutulardaki metot adları ilgili dosyada Command+F / Ctrl+F ile aranabilir.
+%% Dosya konumları (proje köküne göre):
+%% api-gateway/src/main/java/com/avelrune/gateway/security/JwtGatewayFilter.java
+%% api-gateway/src/main/java/com/avelrune/gateway/security/GatewayAccess.java
+%% api-gateway/src/main/resources/application.yml
+%% auth-service/src/main/java/com/avelrune/auth/controller/AuthController.java
+%% auth-service/src/main/java/com/avelrune/auth/service/impl/AuthServiceImpl.java
+%% auth-service/src/main/java/com/avelrune/auth/security/impl/JwtServiceImpl.java
+%% property-service/src/main/java/com/avelrune/property/controller/PropertyController.java
+%% property-service/src/main/java/com/avelrune/property/service/impl/PropertyServiceImpl.java
+%% property-service/src/main/java/com/avelrune/property/repository/PropertyRepository.java
+%% inquiry-service/src/main/java/com/avelrune/inquiry/controller/InquiryController.java
+%% inquiry-service/src/main/java/com/avelrune/inquiry/service/impl/InquiryServiceImpl.java
+%% inquiry-service/src/main/java/com/avelrune/inquiry/client/impl/PropertyClientImpl.java
+%% inquiry-service/src/main/java/com/avelrune/inquiry/repository/InquiryRepository.java
+
+%% inquiry-service/src/main/java/com/avelrune/inquiry/dto/RequestStatusDto.java
+%% inquiry-service/src/main/java/com/avelrune/inquiry/enums/InquirySituation.java
+%% inquiry-service/src/main/java/com/avelrune/inquiry/security/AuthHeaders.java
+
+flowchart TB
+  subgraph S1 ["1 — KULLANICI GİRİŞİ · POST /api/auth/login"]
+    direction LR
+    L1["JwtGatewayFilter.java + GatewayAccess.java<br/>Login için token istemez<br/>application.yml: auth servisine iletir"]
+    L2["AuthController.java: login<br/>AuthServiceImpl.java: login<br/>Hesabı bulur, şifreyi kontrol eder"]
+    L3["JwtServiceImpl.java: generateToken<br/>Kullanıcı ID'si ve USER rolüyle token üretir<br/>AuthController.java: 200 OK döner"]
+    L1 --> L2 --> L3
+  end
+
+  subgraph S2 ["2 — İLAN OLUŞTURMA · POST /api/properties + kullanıcı tokenı"]
+    direction LR
+    P1["JwtGatewayFilter.java: filter / attachIdentity<br/>Tokenı doğrular, kimliği header'a ekler<br/>application.yml: property servisine iletir"]
+    P2["PropertyController.java: create<br/>PropertyServiceImpl.java: create / apply<br/>İlanı hazırlar, sahibini sen yapar"]
+    P3["PropertyRepository.java: save<br/>İlan veritabanına kaydedilir<br/>PropertyController.java: 201 Created döner"]
+    P1 --> P2 --> P3
+  end
+
+  subgraph S3 ["3 — BAŞKA İLANA INQUIRY · POST /api/inquiries + kullanıcı tokenı"]
+    direction LR
+    I1["GatewayAccess.java: isOptionalJwt<br/>JwtGatewayFilter.java: attachOptionalJwt<br/>Geçerli tokendan kullanıcı ID'n alınır<br/>InquiryController.java: create"]
+    I2["InquiryServiceImpl.java: resolveProperty<br/>PropertyClientImpl.java: findBySlug / findById<br/>Property servisine GET isteği gönderir<br/>İlanı ve sahibini öğrenir"]
+    I3["InquiryServiceImpl.java: create<br/>İlan sahibi ve kendi ilanına yazma kontrolü<br/>Gönderen: sen · Alıcı: ilan sahibi<br/>InquiryRepository.java: save → 201 Created"]
+    I1 --> I2 --> I3
+  end
+
+  subgraph S4 ["4 — KULLANICI HESABINDAN ÇIKIŞ"]
+    O1["İstemcideki token ve kullanıcı bilgileri silinir<br/>Backend'e logout isteği gitmez; eski token bu adımda sunucuda iptal edilmez"]
+  end
+
+  subgraph S5 ["5 — ADMIN GİRİŞİ · POST /api/auth/login"]
+    direction LR
+    A1["JwtGatewayFilter.java + GatewayAccess.java<br/>Aynı login yolu; token istenmez<br/>application.yml: auth servisine iletir"]
+    A2["AuthController.java: login<br/>AuthServiceImpl.java: login<br/>Admin hesabını bulur, şifreyi kontrol eder"]
+    A3["JwtServiceImpl.java: generateToken<br/>Admin ID'si ve ADMIN rolüyle yeni token üretir<br/>AuthController.java: 200 OK döner"]
+    A1 --> A2 --> A3
+  end
+
+  subgraph S6 ["6 — INQUIRY'Yİ ÇÖZÜLDÜ İŞARETLE · PATCH /api/inquiries/{id}/update · admin tokenı · status: SOLVED"]
+    direction LR
+    R1["JwtGatewayFilter.java: filter / attachIdentity<br/>Admin tokenını doğrular, kimliği header'a ekler<br/>application.yml: inquiry servisine iletir<br/>InquiryController.java: updateStatus"]
+    R2["AuthHeaders.java: isAdmin<br/>InquiryServiceImpl.java: updateStatus<br/>InquiryRepository.java: findById<br/>Mesajı bulur; admin veya ilgili ilan sahibi işlem yapabilir"]
+    R3["InquiryServiceImpl.java<br/>setStatus: SOLVED olarak değiştirir<br/>InquiryRepository.java: save ile kaydeder<br/>InquiryController.java: 200 OK döner"]
+    R1 --> R2 --> R3
+  end
+
+  S1 -->|"Sonra ilan oluşturursun"| S2
+  S2 -->|"Sonra başka ilana yazarsın"| S3
+  S3 -->|"Sonra çıkış yaparsın"| S4
+  S4 -->|"Sonra admin olarak giriş yaparsın"| S5
+
+  S5 -->|"Sonra inquiry durumunu SOLVED yaparsın"| S6
+
+  classDef gateway fill:#1e3a5f,stroke:#60a5fa,color:#ffffff
+  classDef service fill:#3b2863,stroke:#a78bfa,color:#ffffff
+  classDef result fill:#174b35,stroke:#4ade80,color:#ffffff
+  classDef session fill:#3b3b3b,stroke:#cbd5e1,color:#ffffff
+  class L1,P1,I1,A1,R1 gateway
+  class L2,P2,I2,A2,R2 service
+  class L3,P3,I3,A3,R3 result
+  class O1 session

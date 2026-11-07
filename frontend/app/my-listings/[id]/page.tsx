@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { SiteShell } from "@/components/layout/SiteShell";
+import { InquiryActions } from "@/components/InquiryActions";
 import { apiAuthFetch } from "@/lib/api";
 import { useRequireUser } from "@/lib/useRequireUser";
 import { formatDate, formatPrice, listingLabel } from "@/lib/format";
@@ -31,11 +32,6 @@ export default function HouseMessagesPage() {
     if (!ready) return;
     load().catch((err) => setError(err instanceof Error ? err.message : "Yüklenemedi."));
   }, [params.id, ready]);
-
-  async function markRead(id: number) {
-    await apiAuthFetch(`/api/inquiries/${id}/read`, { method: "PATCH" });
-    load();
-  }
 
   async function removeListing() {
     if (!house) return;
@@ -99,11 +95,9 @@ export default function HouseMessagesPage() {
                   {item.phone} · {item.email}
                 </p>
                 <p>{item.message}</p>
-                {!item.read ? (
-                  <button type="button" className="btn btn-ghost" onClick={() => markRead(item.id)}>
-                    Okundu işaretle
-                  </button>
-                ) : null}
+                <InquiryActions message={item} onUpdated={(updated) => {
+                  setMessages((current) => current?.map((message) => message.id === updated.id ? updated : message) ?? null);
+                }} />
               </li>
             ))}
           </ol>

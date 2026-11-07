@@ -1,9 +1,6 @@
 package com.avelrune.inquiry.controller;
 
-import com.avelrune.inquiry.dto.InquiryRequest;
-import com.avelrune.inquiry.dto.InquiryResponse;
-import com.avelrune.inquiry.dto.InquiryStatsResponse;
-import com.avelrune.inquiry.dto.PropertyMessageSummary;
+import com.avelrune.inquiry.dto.*;
 import com.avelrune.inquiry.security.AuthHeaders;
 import com.avelrune.inquiry.service.InquiryService;
 import jakarta.validation.Valid;
@@ -85,6 +82,22 @@ public class InquiryController {
                 id,
                 AuthHeaders.optionalUserId(userId),
                 AuthHeaders.isAdmin(role)
+        ));
+    }
+
+    @PatchMapping("/{id}/update")
+    public ResponseEntity<InquiryResponse> updateStatus(
+            @PathVariable Long id,
+            @RequestHeader(value = "X-Authenticated-User-Id", required = false) String userId,
+            @RequestHeader(value = "X-Authenticated-Role", required = false) String role,
+            @Valid @RequestBody RequestStatusDto request
+
+    ) {
+        return ResponseEntity.ok(inquiryService.updateStatus(
+                request,
+                id,
+                AuthHeaders.isAdmin(role),
+                AuthHeaders.optionalUserId(userId)
         ));
     }
 }

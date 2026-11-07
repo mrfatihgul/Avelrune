@@ -1348,7 +1348,49 @@ p {
 
 .admin-messages-table th:last-child,
 .admin-messages-table td:last-child {
-  width: 12%;
+  width: 24%;
+}
+
+.inquiry-actions {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.inquiry-actions .field {
+  width: 100%;
+  max-width: 240px;
+}
+
+.inquiry-actions select {
+  width: 100%;
+  min-width: 0;
+}
+
+.inquiry-actions select:focus-visible {
+  outline: 2px solid var(--forest);
+  outline-offset: 3px;
+}
+
+.inquiry-actions select:disabled,
+.inquiry-actions button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.inquiry-notice,
+.inquiry-read {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.inquiry-actions .inquiry-notice {
+  margin: 0;
+}
+
+.inquiry-notice:empty {
+  display: none;
 }
 
 .admin-row-actions {
@@ -1583,7 +1625,7 @@ p {
     text-transform: uppercase;
   }
 
-  .admin-table .admin-actions-cell {
+  .admin-table td.admin-actions-cell {
     display: block;
     padding-top: 12px;
   }

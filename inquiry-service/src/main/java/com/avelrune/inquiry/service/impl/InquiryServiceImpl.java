@@ -1,11 +1,7 @@
 package com.avelrune.inquiry.service.impl;
 
 import com.avelrune.inquiry.client.PropertyClient;
-import com.avelrune.inquiry.dto.InquiryRequest;
-import com.avelrune.inquiry.dto.InquiryResponse;
-import com.avelrune.inquiry.dto.InquiryStatsResponse;
-import com.avelrune.inquiry.dto.PropertyMessageSummary;
-import com.avelrune.inquiry.dto.PropertyRef;
+import com.avelrune.inquiry.dto.*;
 import com.avelrune.inquiry.entity.Inquiry;
 import com.avelrune.inquiry.exception.ApiException;
 import com.avelrune.inquiry.repository.InquiryRepository;
@@ -96,6 +92,17 @@ public class InquiryServiceImpl implements InquiryService {
 
     @Override
     @Transactional
+    public InquiryResponse updateStatus(RequestStatusDto request, Long id, boolean admin, Long actorId) {
+        Inquiry inquiry = inquiryRepository.findById(id).orElseThrow(() -> new ApiException(404, "Talep bulunamadı."));
+        if (!admin && (actorId == null || !actorId.equals(inquiry.getOwnerUserId()))) {
+            throw new ApiException(403, "Bu talebin durumunu değiştirmeye yetkiniz yok.");
+        }
+        inquiry.setStatus(request.getStatus());
+        return toResponse(inquiryRepository.save(inquiry));
+    }
+
+    @Override
+    @Transactional
     public InquiryResponse markRead(Long id, Long actorId, boolean admin) {
         Inquiry inquiry = inquiryRepository.findById(id)
                 .orElseThrow(() -> new ApiException(404, "Talep bulunamadı."));
@@ -150,7 +157,8 @@ public class InquiryServiceImpl implements InquiryService {
                 entity.getSenderUserId(),
                 entity.getSenderUserId() != null,
                 entity.isReadFlag(),
-                entity.getCreatedAt()
+                entity.getCreatedAt(),
+                entity.getStatus()
         );
     }
 

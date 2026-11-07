@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { InquiryActions } from "@/components/InquiryActions";
 import { apiAuthFetch } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import { ContactMessage } from "@/lib/types";
@@ -22,11 +23,6 @@ export default function MessagesPage() {
     load();
   }, []);
 
-  async function markRead(id: number) {
-    await apiAuthFetch(`/api/inquiries/${id}/read`, { method: "PATCH" });
-    load();
-  }
-
   return (
     <AdminShell>
       <p className="eyebrow">Talepler</p>
@@ -46,12 +42,12 @@ export default function MessagesPage() {
               <th>İletişim</th>
               <th>Mesaj</th>
               <th>Tarih</th>
-              <th />
+              <th>Talep işlemleri</th>
             </tr>
           </thead>
           <tbody>
             {messages.map((item) => (
-              <tr key={item.id} style={{ opacity: item.read ? 0.6 : 1 }}>
+              <tr key={item.id}>
                 <td data-label="Ad">{item.fullName}</td>
                 <td data-label="İletişim">
                   <span>
@@ -67,14 +63,10 @@ export default function MessagesPage() {
                   </div>
                 </td>
                 <td data-label="Tarih">{formatDate(item.createdAt)}</td>
-                <td className="admin-actions-cell">
-                  {!item.read ? (
-                    <button type="button" onClick={() => markRead(item.id)}>
-                      Okundu
-                    </button>
-                  ) : (
-                    "Okundu"
-                  )}
+                <td className="admin-actions-cell" data-label="Talep işlemleri">
+                  <InquiryActions message={item} onUpdated={(updated) => {
+                    setMessages((current) => current?.map((message) => message.id === updated.id ? updated : message) ?? null);
+                  }} />
                 </td>
               </tr>
             ))}

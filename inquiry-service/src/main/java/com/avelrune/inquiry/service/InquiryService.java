@@ -1,9 +1,6 @@
 package com.avelrune.inquiry.service;
 
-import com.avelrune.inquiry.dto.InquiryRequest;
-import com.avelrune.inquiry.dto.InquiryResponse;
-import com.avelrune.inquiry.dto.InquiryStatsResponse;
-import com.avelrune.inquiry.dto.PropertyMessageSummary;
+import com.avelrune.inquiry.dto.*;
 
 import java.util.List;
 
@@ -20,4 +17,6 @@ public interface InquiryService {
     InquiryResponse markRead(Long id, Long actorId, boolean admin);
 
     InquiryStatsResponse stats();
+
+    InquiryResponse updateStatus(RequestStatusDto request, Long id, boolean admin, Long actorId);
 }

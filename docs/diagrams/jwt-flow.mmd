@@ -1,24 +1,55 @@
-sequenceDiagram
-  participant Browser
-  participant Traefik
-  participant Gateway
-  participant Auth as auth-service
-  participant Property as property-service
+%% Java / Spring backend — JWT üretimi, gateway doğrulaması ve yetki kontrolü.
+%% Kutulardaki dosya ve metot adları Command+F / Ctrl+F ile aranabilir.
+%% api-gateway/src/main/java/com/avelrune/gateway/security/JwtGatewayFilter.java
+%% api-gateway/src/main/java/com/avelrune/gateway/security/GatewayAccess.java
+%% api-gateway/src/main/resources/application.yml
+%% auth-service/src/main/java/com/avelrune/auth/controller/AuthController.java
+%% auth-service/src/main/java/com/avelrune/auth/service/impl/AuthServiceImpl.java
+%% auth-service/src/main/java/com/avelrune/auth/security/impl/JwtServiceImpl.java
+%% property-service/src/main/java/com/avelrune/property/service/impl/PropertyServiceImpl.java
+%% inquiry-service/src/main/java/com/avelrune/inquiry/service/impl/InquiryServiceImpl.java
 
-  Note over Browser,Traefik: HTTPS :443 site. HTTP :80 site 308. HTTP :80 /api Postman.
-  Browser->>Traefik: HTTPS POST /api/auth/login
-  Note over Traefik: TLS sonlandırma
-  Traefik->>Gateway: HTTP /api/auth/login
-  Gateway->>Auth: public, JWT yok
-  Auth-->>Gateway: accessToken RS256 sub uid role
-  Gateway-->>Traefik: JSON
-  Traefik-->>Browser: HTTPS yanıt
-  Note over Browser: localStorage avelrune.token
+flowchart TB
+  subgraph LOGIN ["1 — TOKEN ALMA · POST /api/auth/login"]
+    direction LR
+    L1["JwtGatewayFilter.java + GatewayAccess.java<br/>isPublic: login için token istemez<br/>application.yml: auth-service'e iletir"]
+    L2["AuthController.java: login<br/>AuthServiceImpl.java: login<br/>Hesabı bulur, şifreyi kontrol eder"]
+    L3["JwtServiceImpl.java: generateToken<br/>E-posta, uid ve USER / ADMIN rolü<br/>Private key ile RS256 imzası<br/>200 OK: accessToken döner"]
+    L1 --> L2 --> L3
+  end
 
-  Browser->>Traefik: HTTPS GET /api/properties/mine + Bearer
-  Traefik->>Gateway: JWT RS256 public.pem
-  Note over Gateway: X-Authenticated silinir. User Role User-Id yazılır.
-  Gateway->>Property: HTTP X-Authenticated-User / Role / User-Id
-  Property-->>Gateway: assigned_user_id eşleşen ilanlar
-  Gateway-->>Traefik: JSON
-  Traefik-->>Browser: HTTPS yanıt
+  subgraph GATEWAY ["2 — SONRAKİ İSTEĞİN GATEWAY'DEN GEÇİŞİ"]
+    direction LR
+    G1["JwtGatewayFilter.java: filter<br/>Dışarıdan gelen kimlik header'larını siler<br/>GatewayAccess.java: isPublic / isOptionalJwt<br/>İstek için token gerekip gerekmediğini belirler"]
+    G2["JwtGatewayFilter.java: parseSigned<br/>Gerekiyorsa veya isteğe bağlı token varsa doğrular<br/>Public key ile imza ve süre kontrolü<br/>Zorunlu token yoksa / geçersizse 401"]
+    G3["JwtGatewayFilter.java: attachIdentity<br/>Geçerli tokenın e-posta, rol ve ID'sini header'a ekler<br/>Authorization header'ını kaldırır<br/>application.yml: ilgili servise iletir"]
+    G1 --> G2 --> G3
+  end
+
+  subgraph ACCESS ["3 — İSTEK TÜRÜNE GÖRE GEÇERLİ KURALLAR · Kutular farklı istek örnekleridir"]
+    direction LR
+    P["PUBLIC İLAN OKUMA<br/>GatewayAccess.java: isPublic<br/>GET /api/properties için token gerekmez<br/>Kimlik eklenmeden ilerleyebilir"]
+    O["INQUIRY GÖNDERME<br/>GatewayAccess.java: isOptionalJwt<br/>POST /api/inquiries: token isteğe bağlı<br/>Geçerliyse gönderen hesaba bağlanır<br/>Yoksa / geçersizse misafir devam eder"]
+    R["KORUMALI İŞLEMLER<br/>İlan oluşturmak için geçerli token gerekir<br/>GatewayAccess.java: requiresAdmin<br/>Admin gereken istekte rol ADMIN olmalı<br/>Farklı rol varsa gateway 403 döner"]
+    P ~~~ O ~~~ R
+  end
+
+  subgraph OWNER ["4 — SERVİSİN KONTROLÜ · Token geçerli olsa da işlem yetkisi ayrıca kontrol edilir"]
+    direction LR
+    P1["PropertyServiceImpl.java: assertOwner<br/>İlanı yönetme işlemlerinde<br/>Admin veya ilgili ilan sahibi olmalıdır"]
+    I1["InquiryServiceImpl.java: updateStatus<br/>Inquiry durumunu değiştirmek için<br/>Admin veya mesajın bağlı olduğu ilanın sahibi olmalıdır<br/>Gönderen olmak tek başına yeterli değildir"]
+    P1 ~~~ I1
+  end
+
+  LOGIN -->|"Yeni istekte Authorization: Bearer token gönderilir"| GATEWAY
+  GATEWAY -->|"Public / isteğe bağlı / zorunlu token kuralları"| ACCESS
+  ACCESS -->|"İşlem sahiplik kontrolü gerektiriyorsa"| OWNER
+
+  classDef gateway fill:#1e3a5f,stroke:#60a5fa,color:#ffffff
+  classDef service fill:#3b2863,stroke:#a78bfa,color:#ffffff
+  classDef result fill:#174b35,stroke:#4ade80,color:#ffffff
+  classDef session fill:#3b3b3b,stroke:#cbd5e1,color:#ffffff
+  class L1,G1,G2,G3 gateway
+  class L2,P1,I1 service
+  class L3 result
+  class P,O,R session
